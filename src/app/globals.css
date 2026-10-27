@@ -1,0 +1,271 @@
+/*
+ * 디자인 토큰 — Figma "ACT Design System" 변수와 1:1 대응 (CONSTITUTION.md §5).
+ * Primitives → Color(Light/Dark) → Dimension 순서. 값을 바꿀 때는 Figma 변수도 함께 바꾼다.
+ */
+:root {
+  /* Primitives */
+  --neutral-0: #ffffff;
+  --neutral-25: #fbfaf7;
+  --neutral-50: #f6f5f1;
+  --neutral-100: #eceae3;
+  --neutral-200: #dedbd2;
+  --neutral-400: #a3a39c;
+  --neutral-500: #7a7d84;
+  --neutral-700: #474b52;
+  --neutral-800: #2a2d33;
+  --neutral-900: #1b1d21;
+  --neutral-950: #121316;
+  --orange-50: #fff0e8;
+  --orange-400: #ff7a45;
+  --orange-500: #f05a1e;
+  --orange-700: #b23b0c;
+  --orange-900: #3a1a0d;
+  --blue-50: #e8eeff;
+  --blue-300: #8ea8ff;
+  --blue-600: #2f5bea;
+  --blue-900: #17224a;
+  --violet-50: #f1ebff;
+  --violet-300: #bba0ff;
+  --violet-600: #7442e0;
+  --violet-900: #2a1a4d;
+  --green-50: #e5f5ea;
+  --green-300: #7fd3a2;
+  --green-600: #16834a;
+  --green-900: #0f3220;
+  --red-50: #fde9e7;
+  --red-300: #ff9a8d;
+  --red-600: #d23a2a;
+  --red-900: #45160f;
+  --amber-50: #fcf1dc;
+  --amber-300: #f2c26b;
+  --amber-600: #a86200;
+  --amber-900: #3d2606;
+
+  /* Color · Light */
+  --color-bg-page: var(--neutral-50);
+  --color-bg-surface: var(--neutral-0);
+  --color-bg-subtle: var(--neutral-100);
+  --color-bg-inverse: var(--neutral-900);
+  --color-bg-accent: var(--orange-500);
+  --color-bg-accent-soft: var(--orange-50);
+  --color-text-primary: var(--neutral-900);
+  --color-text-secondary: var(--neutral-700);
+  --color-text-tertiary: var(--neutral-500);
+  --color-text-inverse: var(--neutral-0);
+  --color-text-accent: var(--orange-700);
+  --color-border-default: var(--neutral-200);
+  --color-border-strong: var(--neutral-900);
+  --color-border-accent: var(--orange-500);
+  --color-type-web-tool-fg: var(--blue-600);
+  --color-type-web-tool-bg: var(--blue-50);
+  --color-type-web-app-fg: var(--violet-600);
+  --color-type-web-app-bg: var(--violet-50);
+  --color-type-mobile-app-fg: var(--green-600);
+  --color-type-mobile-app-bg: var(--green-50);
+  --color-type-video-fg: var(--red-600);
+  --color-type-video-bg: var(--red-50);
+  --color-type-material-fg: var(--amber-600);
+  --color-type-material-bg: var(--amber-50);
+
+  /* Dimension */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-none: 0;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-full: 999px;
+  --stroke-default: 1px;
+
+  /* 하드 오프셋: 대표 CTA 전용, 화면당 최대 2곳 */
+  --offset-hard: 3px 3px 0 0 var(--color-border-strong);
+
+  --content-width: 1200px;
+  --gutter: 120px;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg-page: var(--neutral-950);
+    --color-bg-surface: var(--neutral-900);
+    --color-bg-subtle: var(--neutral-800);
+    --color-bg-inverse: var(--neutral-50);
+    --color-bg-accent: var(--orange-400);
+    --color-bg-accent-soft: var(--orange-900);
+    --color-text-primary: var(--neutral-50);
+    --color-text-secondary: var(--neutral-200);
+    --color-text-tertiary: var(--neutral-400);
+    --color-text-inverse: var(--neutral-950);
+    --color-text-accent: var(--orange-400);
+    --color-border-default: var(--neutral-800);
+    --color-border-strong: var(--neutral-100);
+    --color-border-accent: var(--orange-400);
+    --color-type-web-tool-fg: var(--blue-300);
+    --color-type-web-tool-bg: var(--blue-900);
+    --color-type-web-app-fg: var(--violet-300);
+    --color-type-web-app-bg: var(--violet-900);
+    --color-type-mobile-app-fg: var(--green-300);
+    --color-type-mobile-app-bg: var(--green-900);
+    --color-type-video-fg: var(--red-300);
+    --color-type-video-bg: var(--red-900);
+    --color-type-material-fg: var(--amber-300);
+    --color-type-material-bg: var(--amber-900);
+  }
+}
+
+@media (max-width: 1279px) {
+  :root {
+    --gutter: 40px;
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --gutter: 16px;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg-page);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans), "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 26px;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+ol,
+dl,
+dd {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-border-accent);
+  outline-offset: 2px;
+}
+
+.container {
+  width: 100%;
+  max-width: calc(var(--content-width) + var(--gutter) * 2);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Text styles — Figma 텍스트 스타일과 같은 이름 */
+.t-display {
+  font-size: 44px;
+  line-height: 56px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+.t-h1 {
+  font-size: 32px;
+  line-height: 42px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.t-h2 {
+  font-size: 24px;
+  line-height: 34px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+.t-h3 {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 600;
+}
+.t-body-lg {
+  font-size: 18px;
+  line-height: 30px;
+}
+.t-body-sm {
+  font-size: 14px;
+  line-height: 22px;
+}
+.t-label {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+}
+.t-eyebrow {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-accent);
+}
+.t-meta {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-text-tertiary);
+}
+.t-mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+@media (max-width: 767px) {
+  .t-display {
+    font-size: 32px;
+    line-height: 42px;
+  }
+  .t-h1 {
+    font-size: 26px;
+    line-height: 36px;
+  }
+}

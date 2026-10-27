@@ -1,0 +1,185 @@
+/* Figma Components 페이지의 Button / Filter Chip / Type Badge */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: var(--stroke-default) solid var(--color-border-strong);
+  border-radius: var(--radius-xs);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform 80ms ease,
+    box-shadow 80ms ease,
+    background-color 120ms ease;
+}
+.button:hover {
+  background: var(--color-bg-subtle);
+}
+.button:disabled,
+.button[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.sm {
+  padding: var(--space-2) var(--space-3);
+  font-size: 12px;
+  line-height: 16px;
+}
+.primary {
+  background: var(--color-bg-accent);
+  color: var(--color-text-inverse);
+  box-shadow: var(--offset-hard);
+}
+.primary:hover {
+  background: var(--color-bg-accent);
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0 0 var(--color-border-strong);
+}
+.primary:active {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+.ghost {
+  border-color: var(--color-border-default);
+  color: var(--color-text-secondary);
+}
+.danger {
+  border-color: var(--color-type-video-fg);
+  color: var(--color-type-video-fg);
+}
+.block {
+  width: 100%;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: var(--stroke-default) solid var(--color-border-default);
+  border-radius: var(--radius-xs);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.chip:hover {
+  border-color: var(--color-border-strong);
+}
+.chip[aria-current="true"] {
+  background: var(--color-bg-inverse);
+  border-color: var(--color-border-strong);
+  color: var(--color-text-inverse);
+}
+.chipCount {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+}
+.chip[aria-current="true"] .chipCount {
+  color: inherit;
+  opacity: 0.7;
+}
+.chip[data-empty="true"] {
+  color: var(--color-text-tertiary);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px var(--space-2);
+  border: var(--stroke-default) solid currentColor;
+  border-radius: var(--radius-xs);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: currentColor;
+}
+.badge[data-type="web-tool"] {
+  color: var(--color-type-web-tool-fg);
+  background: var(--color-type-web-tool-bg);
+}
+.badge[data-type="web-app"] {
+  color: var(--color-type-web-app-fg);
+  background: var(--color-type-web-app-bg);
+}
+.badge[data-type="mobile-app"] {
+  color: var(--color-type-mobile-app-fg);
+  background: var(--color-type-mobile-app-bg);
+}
+.badge[data-type="video"] {
+  color: var(--color-type-video-fg);
+  background: var(--color-type-video-bg);
+}
+.badge[data-type="material"] {
+  color: var(--color-type-material-fg);
+  background: var(--color-type-material-bg);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+.status::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-text-tertiary);
+}
+.status[data-status="published"]::before {
+  background: var(--color-type-mobile-app-fg);
+}
+.status[data-status="review"]::before {
+  background: var(--color-bg-accent);
+}
+.status[data-status="hidden"]::before {
+  background: var(--color-type-video-fg);
+}
+
+.notice {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: var(--stroke-default) solid var(--color-border-default);
+  border-left: 3px solid var(--color-border-accent);
+  background: var(--color-bg-surface);
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--color-text-secondary);
+}
+.notice[data-tone="danger"] {
+  border-left-color: var(--color-type-video-fg);
+}
+.notice[data-tone="success"] {
+  border-left-color: var(--color-type-mobile-app-fg);
+}
+.notice strong {
+  color: var(--color-text-primary);
+}

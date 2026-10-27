@@ -1,0 +1,10 @@
+# 매일 새벽 링크 점검. act-check-links.service와 함께 설치한다.
+[Unit]
+Description=ACT daily link check
+
+[Timer]
+OnCalendar=*-*-* 04:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

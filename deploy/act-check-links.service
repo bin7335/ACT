@@ -1,0 +1,9 @@
+[Unit]
+Description=ACT link check
+
+[Service]
+Type=oneshot
+User=act
+WorkingDirectory=/opt/act/src
+Environment=DATA_DIR=/var/lib/act
+ExecStart=/usr/bin/npm run check-links

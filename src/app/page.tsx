@@ -1,0 +1,135 @@
+import Link from "next/link";
+import { Suspense } from "react";
+import { ButtonLink } from "@/components/ui";
+import { WorkGrid, WorkGridSkeleton } from "@/components/WorkCard";
+import p from "@/components/page.module.css";
+import { getArchive, getLatestWorks, getStats, listProjects } from "@/lib/content/queries";
+import { WORK_TYPE_LABEL, WORK_TYPES } from "@/lib/content/types";
+import s from "./home.module.css";
+
+export default function Home() {
+  return (
+    <div className="container">
+      <section className={s.hero}>
+        <p className="t-eyebrow">TEACHER-MADE ARCHIVE</p>
+        <h1 className="t-display">
+          선생님이 만든 것을
+          <br />
+          한곳에 쌓는 아카이브
+        </h1>
+        <p className={`t-body-lg ${s.lead}`}>
+          교실에서 직접 만들고 써 본 웹 도구, 앱, 영상, 수업 자료를 모았습니다. 로그인 없이 바로 열어 보세요.
+        </p>
+        <div className={s.ctas}>
+          <ButtonLink href="/works">작품 둘러보기</ButtonLink>
+          <Link href="/submit" className={s.textLink}>
+            내 작품 올리기 →
+          </Link>
+        </div>
+        <Suspense fallback={<div className={s.stats} />}>
+          <Stats />
+        </Suspense>
+      </section>
+
+      <Suspense fallback={<WorkGridSkeleton count={4} />}>
+        <TypeIndex />
+      </Suspense>
+
+      <section className={p.section} aria-labelledby="latest">
+        <div className={p.sectionHead}>
+          <h2 id="latest" className="t-h2">
+            새로 올라온 작품
+          </h2>
+          <Link href="/works">전체 보기 →</Link>
+        </div>
+        <Suspense fallback={<WorkGridSkeleton />}>
+          <Latest />
+        </Suspense>
+      </section>
+
+      <Suspense fallback={null}>
+        <Projects />
+      </Suspense>
+
+      <section className={s.band}>
+        <div>
+          <p className="t-eyebrow">SUBMIT</p>
+          <h2 className="t-h2">교실을 위해 만든 것이 있나요?</h2>
+          <p className={s.bandText}>로그인 없이 올릴 수 있어요. 운영진이 확인한 뒤 공개되고, 받은 수정 링크로 언제든 고칠 수 있습니다.</p>
+        </div>
+        <ButtonLink href="/submit" variant="primary">
+          작품 올리기
+        </ButtonLink>
+      </section>
+    </div>
+  );
+}
+
+async function Stats() {
+  const st = await getStats();
+  return (
+    <dl className={s.stats}>
+      <div>
+        <dt>작품</dt>
+        <dd>{st.works}</dd>
+      </div>
+      <div>
+        <dt>만든 선생님</dt>
+        <dd>{st.makers}</dd>
+      </div>
+      <div>
+        <dt>연구회 프로젝트</dt>
+        <dd>{st.projects}</dd>
+      </div>
+    </dl>
+  );
+}
+
+async function TypeIndex() {
+  const { facets } = await getArchive({});
+  return (
+    <nav aria-label="유형별로 보기" className={s.types}>
+      {WORK_TYPES.map((t) => (
+        <Link key={t} href={`/works?type=${t}`} className={s.type} data-type={t}>
+          <span className={s.typeName}>{WORK_TYPE_LABEL[t]}</span>
+          <span className={s.typeCount}>{facets.type[t] ?? 0}</span>
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+async function Latest() {
+  const works = await getLatestWorks(8);
+  if (!works.length) return <p className={s.bandText}>아직 공개된 작품이 없어요. 첫 작품을 올려 주세요.</p>;
+  return <WorkGrid works={works} priorityCount={4} />;
+}
+
+async function Projects() {
+  const projects = (await listProjects()).slice(0, 3);
+  if (!projects.length) return null;
+  return (
+    <section className={p.section} aria-labelledby="projects">
+      <div className={p.sectionHead}>
+        <h2 id="projects" className="t-h2">
+          연구회 프로젝트
+        </h2>
+        <Link href="/projects">전체 보기 →</Link>
+      </div>
+      <ul className={p.list}>
+        {projects.map((pr) => (
+          <li key={pr.slug}>
+            <Link href={`/projects/${pr.slug}`} className={p.listItem}>
+              <span className="t-eyebrow">
+                {pr.year} / {pr.term}
+              </span>
+              <h3>{pr.name}</h3>
+              <p>{pr.summary}</p>
+              <span className={p.listMeta}>작품 {pr.works.length}개</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
