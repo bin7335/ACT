@@ -24,11 +24,13 @@
 
 ## 개발
 
+키는 로컬에도 저장소에도 두지 않는다. 모두 Infisical `ACT` 프로젝트(`.infisical.json`)에서 실행할 때 주입한다.
+
 ```bash
 npm install
-cp .env.example .env.local   # ADMIN_PASSWORD, ADMIN_SECRET 채우기 (SITE_URL=http://localhost:3000)
+infisical login              # 처음 한 번
 npm run db:seed              # 예시 데이터 (./data/act.db)
-npm run dev
+npm run dev                  # infisical run --env=dev -- next dev
 ```
 
 스키마를 바꾸면 `npm run db:generate`로 `drizzle/`에 마이그레이션을 만든다.
@@ -45,11 +47,14 @@ npm run dev
 
 ## 환경변수
 
+`*` 표시는 Infisical `ACT` 프로젝트(dev / prod)에 있는 키다. 나머지는 실행 환경에서 지정하는 일반 설정이다.
+
 | 이름 | 설명 |
 |---|---|
-| `SITE_URL` | 공개 주소. 메타데이터·사이트맵·수정 링크에 쓰인다 |
+| `SITE_URL` * | 공개 주소. 메타데이터·사이트맵·수정 링크에 쓰인다 (prod 값은 도메인 확정 후 등록) |
 | `DATA_DIR` | DB와 업로드 이미지 디렉터리 (기본 `./data`) |
 | `MIGRATIONS_DIR` | 마이그레이션 폴더 (기본 `./drizzle`) |
-| `ADMIN_PASSWORD` | 운영진 화면 비밀번호 |
-| `ADMIN_SECRET` | 운영진 쿠키 서명 키 (운영 필수) |
+| `ADMIN_PASSWORD` * | 운영진 화면 비밀번호 |
+| `ADMIN_SECRET` * | 운영진 쿠키 서명 키 |
+| `GOOGLE_CLIENT_ID` *, `GOOGLE_CLIENT_SECRET` * | Google OAuth 웹 클라이언트 "ACT Web" (GCP My First Project). 로그인 도입 시 사용. 리디렉션 URI는 현재 `http://localhost:3000/api/auth/callback/google`만 등록 |
 | `PORT`, `HOSTNAME` | standalone 서버 바인딩 |

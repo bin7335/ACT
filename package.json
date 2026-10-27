@@ -3,14 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "infisical run --env=dev -- next dev",
     "build": "next build && node scripts/package-standalone.mjs",
     "start": "node .next/standalone/server.js",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:seed": "tsx scripts/seed.ts",
-    "check-links": "tsx --conditions=react-server scripts/check-links.ts",
-    "typecheck": "next typegen && tsc --noEmit"
+    "check-links": "infisical run --env=dev -- tsx --conditions=react-server scripts/check-links.ts",
+    "typecheck": "next typegen && tsc --noEmit",
+    "dev:noenv": "next dev"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
