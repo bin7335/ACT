@@ -4,8 +4,33 @@ import { index, integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlit
 const ts = (name: string) => integer(name, { mode: "timestamp_ms" });
 const now = sql`(cast(unixepoch('subsecond') * 1000 as integer))`;
 
-// 회원 로그인은 아직 없다(추후 도입). 작품 수정 권한은 제출 시 발급하는 수정 링크 토큰으로 확인하고,
-// 로그인을 붙이면 owner_id에 회원 ID를 채워 같은 행을 그대로 쓴다.
+export const member = sqliteTable("member", {
+  id: text("id").primaryKey(),
+  username: text("username").unique(),
+  passwordHash: text("password_hash"),
+  name: text("name").notNull(),
+  createdAt: ts("created_at").notNull().default(now),
+});
+
+export const googleIdentity = sqliteTable("google_identity", {
+  subject: text("subject").primaryKey(),
+  memberId: text("member_id").notNull().unique().references(() => member.id, { onDelete: "cascade" }),
+});
+
+export const memberSession = sqliteTable("member_session", {
+  tokenHash: text("token_hash").primaryKey(),
+  memberId: text("member_id").notNull().references(() => member.id, { onDelete: "cascade" }),
+  expiresAt: ts("expires_at").notNull(),
+});
+
+export const oauthAttempt = sqliteTable("oauth_attempt", {
+  stateHash: text("state_hash").primaryKey(),
+  verifier: text("verifier").notNull(),
+  nonce: text("nonce").notNull(),
+  next: text("next").notNull(),
+  linkSessionHash: text("link_session_hash"),
+  expiresAt: ts("expires_at").notNull(),
+});
 
 export const maker = sqliteTable("maker", {
   slug: text("slug").primaryKey(),
@@ -44,7 +69,7 @@ export const work = sqliteTable(
     contactEmail: text("contact_email"),
     /** 수정 링크 토큰의 SHA-256 해시. 원문은 저장하지 않는다. */
     editTokenHash: text("edit_token_hash"),
-    /** 로그인 도입 후 회원 ID */
+    /** 계정으로 관리하는 작품의 회원 ID (비회원 작품은 null) */
     ownerId: text("owner_id"),
     createdAt: ts("created_at").notNull().default(now),
     updatedAt: ts("updated_at").notNull().default(now),

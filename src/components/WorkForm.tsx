@@ -13,6 +13,7 @@ type Props = {
   projects: { slug: string; name: string; year: number; term: string }[];
   currentThumbnail?: string | null;
   submitLabel: string;
+  accountSubmission?: boolean;
 };
 
 const TYPE_HINT: Record<string, string> = {
@@ -23,7 +24,7 @@ const TYPE_HINT: Record<string, string> = {
   material: "활동지, 슬라이드 등 수업 자료",
 };
 
-export function WorkForm({ action, initial, mode, projects, currentThumbnail, submitLabel }: Props) {
+export function WorkForm({ action, initial, mode, projects, currentThumbnail, submitLabel, accountSubmission }: Props) {
   const [state, formAction, pending] = useActionState(action, { values: initial });
   const formRef = useRef<HTMLFormElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -306,7 +307,7 @@ export function WorkForm({ action, initial, mode, projects, currentThumbnail, su
         <Button type="submit" variant="primary" disabled={pending}>
           {pending ? "저장하는 중…" : submitLabel}
         </Button>
-        {mode === "create" && <p className={f.hint}>제출하면 이 작품을 고칠 수 있는 개인 수정 링크를 드려요.</p>}
+        {mode === "create" && <p className={f.hint}>{accountSubmission ? "제출한 작품은 마이페이지에서 관리할 수 있어요." : "제출하면 이 작품을 고칠 수 있는 개인 수정 링크를 드려요."}</p>}
       </div>
     </form>
   );

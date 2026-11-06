@@ -20,7 +20,27 @@
 | 운영진 | `/admin` — 공용 비밀번호(`ADMIN_PASSWORD`). 검수 대기·공개·숨김, 반려 메모, 직접 수정, 삭제, 프로젝트·제작자 관리, 링크 점검 |
 | 운영 | `sitemap.xml`, `robots.txt`, 보안 헤더, 링크 점검 스크립트 |
 
-회원 로그인은 추후 도입한다. 작품 테이블의 `owner_id`가 그 자리다.
+## 회원 로그인
+
+- `/signup`: 아이디(영문·숫자·밑줄 4~24자, 대소문자 무시), 표시 이름, 비밀번호(12~128자)로 가입.
+- `/login`: 아이디 로그인 또는 Google 로그인. 비밀번호는 salt가 있는 scrypt 해시로 저장하며 시도 횟수를 제한한다.
+- `/account`: 내 작품 목록, 로그아웃, Google 계정 연결. 아이디 회원은 현재 비밀번호를 재확인하고 Google 계정을 연결한다. 다른 회원에게 연결된 Google 계정은 가져오거나 병합할 수 없다.
+- 로그인 후 제출한 작품은 계정에 저장된다. 비회원 제출은 유지하며 기존 수정 링크에서 계정으로 가져오면 해당 링크는 즉시 폐기된다.
+- 운영진 권한은 기존 공용 비밀번호와 분리한다. 회원가입만으로 운영진 권한을 얻지 않는다.
+- 비밀번호 재설정, 계정 병합/연결 해제, 즐겨찾기 서버 동기화는 제공하지 않는다.
+
+### Google OAuth 운영 설정
+
+Infisical `ACT`의 `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SITE_URL`을 사용한다. 키는 파일로 만들지 않는다.
+`SITE_URL`은 로그인에 사용할 대표 origin이다(개발: `http://localhost:3000`, 운영: HTTPS). Google 로그인/연결은 대표 주소에서 시작해야 한다. 도메인 이전 시 `SITE_URL`과 Google Console 콜백을 함께 맞추며, 기존 도메인은 대표 도메인으로 리디렉션한다. 쿠키는 호스트별로 분리된다.
+
+2026-11-06 `ACT Web`에 localhost와 아래 두 원본/콜백이 등록됨:
+- `https://act.aura-board.com` → `/api/auth/callback/google`
+- `https://aict.app` → `/api/auth/callback/google`
+
+요청 범위는 `openid profile`만 사용한다. OAuth state·PKCE·nonce, ID 토큰 서명/발급자/대상/만료를 검증한다. 공급자 access/refresh token은 보관하지 않는다. 로그인 세션은 30일이며 DB에는 토큰 해시만 저장한다. Google 연결 요청은 시작 시점 세션에 묶이며 로그아웃/계정 변경 시 실패한다.
+
+배포 전에 영구 DB를 백업한다. 시작 시 Drizzle 마이그레이션이 회원·Google 연결·세션·일회성 OAuth 테이블을 추가한다. 기존 작품은 보존한다. `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`로 검증할 수 있다.
 
 ## 개발
 
@@ -56,5 +76,5 @@ npm run dev                  # infisical run --env=dev -- next dev
 | `MIGRATIONS_DIR` | 마이그레이션 폴더 (기본 `./drizzle`) |
 | `ADMIN_PASSWORD` * | 운영진 화면 비밀번호 |
 | `ADMIN_SECRET` * | 운영진 쿠키 서명 키 |
-| `GOOGLE_CLIENT_ID` *, `GOOGLE_CLIENT_SECRET` * | Google OAuth 웹 클라이언트 "ACT Web" (GCP My First Project). 로그인 도입 시 사용. 리디렉션 URI는 현재 `http://localhost:3000/api/auth/callback/google`만 등록 |
+| `GOOGLE_CLIENT_ID` *, `GOOGLE_CLIENT_SECRET` * | Google OAuth 웹 클라이언트 "ACT Web" (GCP My First Project). 콜백은 `SITE_URL` + `/api/auth/callback/google` |
 | `PORT`, `HOSTNAME` | standalone 서버 바인딩 |

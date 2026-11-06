@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { currentMember } from "@/lib/auth";
+import { Notice } from "@/components/ui";
 import { Suspense } from "react";
 import { SectionHeader } from "@/components/SectionHeader";
 import { WorkForm } from "@/components/WorkForm";
@@ -15,7 +18,7 @@ export default function SubmitPage() {
       <SectionHeader
         eyebrow="SUBMIT"
         title="작품 올리기"
-        description="로그인 없이 올릴 수 있어요. 운영진이 확인한 뒤 공개되며, 제출 후 받는 수정 링크로 언제든 고칠 수 있습니다."
+        description="운영진이 확인한 뒤 공개됩니다. 로그인하면 마이페이지에서, 비회원으로 제출하면 개인 수정 링크로 관리할 수 있어요."
       />
       <Suspense>
         <Form />
@@ -26,5 +29,9 @@ export default function SubmitPage() {
 
 async function Form() {
   const projects = await listProjectOptions();
-  return <WorkForm action={submitWorkAction} initial={emptyValues} mode="create" projects={projects} submitLabel="검수 요청하기" />;
+  const member = await currentMember();
+  return <>
+    <Notice>{member ? `${member.name}님의 계정에 저장됩니다. 마이페이지에서 수정할 수 있어요.` : <><Link href="/login?next=%2Fsubmit">로그인</Link>하면 내 작품을 한곳에서 관리할 수 있어요. 비회원 제출도 가능합니다.</>}</Notice>
+    <WorkForm action={submitWorkAction} initial={emptyValues} mode="create" projects={projects} submitLabel="검수 요청하기" accountSubmission={!!member} />
+  </>;
 }

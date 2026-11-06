@@ -12,6 +12,7 @@ const MENU = [
   { href: "/makers", label: "제작자" },
   { href: "/projects", label: "연구회 프로젝트" },
   { href: "/about", label: "소개" },
+  { href: "/account", label: "마이페이지·로그인" },
 ];
 
 export function TopNav({ siteName }: { siteName: string }) {

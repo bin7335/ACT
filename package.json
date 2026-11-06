@@ -11,12 +11,14 @@
     "db:seed": "tsx scripts/seed.ts",
     "check-links": "infisical run --env=dev -- tsx --conditions=react-server scripts/check-links.ts",
     "typecheck": "next typegen && tsc --noEmit",
-    "dev:noenv": "next dev"
+    "dev:noenv": "next dev",
+    "test": "tsx --conditions=react-server --test tests/*.test.ts"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.4",
     "next": "16.4.3",
+    "oauth4webapi": "^3.8.8",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "server-only": "^0.0.1",

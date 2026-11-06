@@ -7,6 +7,9 @@ import { StatusLabel, Notice } from "@/components/ui";
 import { WorkForm } from "@/components/WorkForm";
 import p from "@/components/page.module.css";
 import { editWorkAction } from "@/app/actions";
+import { claimWorkAction } from "@/app/auth-actions";
+import { currentMember } from "@/lib/auth";
+import { Button } from "@/components/ui";
 import { valuesFromWork } from "@/lib/content/form";
 import { getWorkByEditTokenHash, listProjectOptions } from "@/lib/content/queries";
 import { hashToken } from "@/lib/security";
@@ -23,6 +26,7 @@ export default async function EditPage(props: PageProps<"/edit/[token]">) {
   const projects = await listProjectOptions();
   const editUrl = `${site.url}/edit/${token}`;
   const isNew = sp.new === "1";
+  const member = await currentMember();
 
   return (
     <div className={`container ${p.narrow} ${p.page}`}>
@@ -47,6 +51,11 @@ export default async function EditPage(props: PageProps<"/edit/[token]">) {
         </div>
       </section>
 
+      {!work.ownerId && <section className={s.linkBox}>
+        <h2 className="t-h3">내 계정으로 관리하기</h2>
+        <p>계정으로 가져오면 이 수정 링크는 더 이상 사용할 수 없고, 로그인한 본인만 마이페이지에서 수정할 수 있어요.</p>
+        {member ? <form action={claimWorkAction.bind(null, token)}><Button type="submit">{member.name}님의 계정으로 가져오기</Button></form> : <Link href={`/login?next=${encodeURIComponent(`/edit/${token}`)}`}>로그인하고 작품 가져오기 →</Link>}
+      </section>}
       <div className={s.status}>
         <span>지금 상태</span>
         <StatusLabel status={work.status} />

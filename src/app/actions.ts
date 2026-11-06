@@ -1,6 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { currentMember } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { checkAdminPassword, endAdminSession, isAdmin, requireAdmin, startAdminSession } from "@/lib/admin";
 import { checkLinks } from "@/lib/content/link-check";
@@ -39,9 +40,10 @@ export async function submitWorkAction(_prev: WorkFormState, fd: FormData): Prom
   const thumb = await thumbnailFrom(fd);
   if (thumb.error) return { values, errors: { thumbnail: thumb.error } };
 
+  const member = await currentMember();
   const { token, hash } = newEditToken();
-  await createWork(v.data, { thumbnail: thumb.path ?? null, editTokenHash: hash });
-  redirect(`/edit/${token}?new=1`);
+  const slug = await createWork(v.data, { thumbnail: thumb.path ?? null, editTokenHash: member ? null : hash, ownerId: member?.id });
+  redirect(member ? `/account/works/${slug}?new=1` : `/edit/${token}?new=1`);
 }
 
 // ── 수정 링크로 고치기 ───────────────────────────────────────────
@@ -54,7 +56,21 @@ export async function editWorkAction(token: string, _prev: WorkFormState, fd: Fo
   if ("errors" in v) return { values, errors: v.errors };
   const thumb = await thumbnailFrom(fd);
   if (thumb.error) return { values, errors: { thumbnail: thumb.error } };
-  await updateWork(work.slug, v.data, { thumbnail: thumb.path });
+  await updateWork(work.slug, v.data, { thumbnail: thumb.path, editTokenHash: hashToken(token) });
+  refresh();
+  return { values, saved: true };
+}
+
+export async function memberEditWorkAction(slug: string, prev: WorkFormState, fd: FormData): Promise<WorkFormState> {
+  const member = await currentMember();
+  const work = member ? await getAnyWork(slug) : null;
+  if (!member || !work || work.ownerId !== member.id) return { values: prev.values, errors: { form: "이 작품을 수정할 권한이 없어요. 다시 로그인해 주세요." } };
+  const values = readWorkForm(fd);
+  const v = validateWork(values);
+  if ("errors" in v) return { values, errors: v.errors };
+  const thumb = await thumbnailFrom(fd);
+  if (thumb.error) return { values, errors: { thumbnail: thumb.error } };
+  await updateWork(slug, v.data, { thumbnail: thumb.path, ownerId: member.id });
   refresh();
   return { values, saved: true };
 }
