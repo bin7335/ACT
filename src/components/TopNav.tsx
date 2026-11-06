@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useFavorites } from "./favorites";
 import { buttonClass } from "./ui";
 import s from "./TopNav.module.css";
@@ -12,15 +12,14 @@ const MENU = [
   { href: "/makers", label: "제작자" },
   { href: "/projects", label: "연구회 프로젝트" },
   { href: "/about", label: "소개" },
-  { href: "/account", label: "마이페이지·로그인" },
 ];
 
-export function TopNav({ siteName }: { siteName: string }) {
-  return <TopNavView siteName={siteName} pathname={usePathname()} />;
+export function TopNav({ siteName, account }: { siteName: string; account?: ReactNode }) {
+  return <TopNavView siteName={siteName} pathname={usePathname()} account={account} />;
 }
 
 /** usePathname 없이 그리는 정적 셸(프리렌더용 Suspense fallback) */
-export function TopNavView({ siteName, pathname }: { siteName: string; pathname: string }) {
+export function TopNavView({ siteName, pathname, account }: { siteName: string; pathname: string; account?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const favCount = useFavorites().length;
 
@@ -73,6 +72,7 @@ export function TopNavView({ siteName, pathname }: { siteName: string; pathname:
           <Link href="/submit" className={`${buttonClass("primary", "sm")} ${s.submit}`}>
             작품 올리기
           </Link>
+          {account}
           <button type="button" className={s.toggle} aria-expanded={open} aria-label="메뉴" onClick={() => setOpen((v) => !v)}>
             <span />
             <span />

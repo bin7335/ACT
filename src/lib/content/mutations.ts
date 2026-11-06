@@ -1,6 +1,6 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
-import { and, eq, isNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import { deleteThumbnail } from "@/lib/uploads";
 import type { WorkInput } from "./form";
@@ -25,7 +25,7 @@ function setMakers(workSlug: string, makerSlugs: string[]) {
   makerSlugs.forEach((m, i) => db.insert(schema.workMaker).values({ workSlug, makerSlug: m, position: i }).run());
 }
 
-export async function createWork(input: WorkInput, opts: { thumbnail: string | null; editTokenHash: string | null; ownerId?: string; status?: WorkStatus }) {
+export async function createWork(input: WorkInput, opts: { thumbnail: string | null; ownerId: string; status?: WorkStatus }) {
   const slug = newSlug();
   const makers = await findOrCreateMakers(input.makers);
   db.transaction(() => {
@@ -43,8 +43,7 @@ export async function createWork(input: WorkInput, opts: { thumbnail: string | n
         thumbnail: opts.thumbnail,
         thumbnailAlt: input.thumbnailAlt || null,
         contactEmail: input.contactEmail || null,
-        editTokenHash: opts.editTokenHash,
-        ownerId: opts.ownerId ?? null,
+        ownerId: opts.ownerId,
         status: opts.status ?? "review",
         publishedAt: opts.status === "published" ? new Date() : null,
       })
@@ -54,21 +53,14 @@ export async function createWork(input: WorkInput, opts: { thumbnail: string | n
   return slug;
 }
 
-export function claimWork(tokenHash: string, memberId: string) {
-  return db.update(schema.work).set({ ownerId: memberId, editTokenHash: null })
-    .where(and(eq(schema.work.editTokenHash, tokenHash), isNull(schema.work.ownerId)))
-    .returning({ slug: schema.work.slug }).get();
-}
-
-export async function updateWork(slug: string, input: WorkInput, opts: { thumbnail?: string | null; editTokenHash?: string; ownerId?: string }) {
+export async function updateWork(slug: string, input: WorkInput, opts: { thumbnail?: string | null; ownerId?: string }) {
   const prev = db.select().from(schema.work).where(eq(schema.work.slug, slug)).get();
   if (!prev) throw new Error("not found");
   const makers = await findOrCreateMakers(input.makers);
   const linksChanged = JSON.stringify(prev.links) !== JSON.stringify(input.links);
   db.transaction(() => {
-    // 업로드를 기다리는 동안 수정 링크가 계정으로 이전되었을 수도 있다.
     const current = db.select().from(schema.work).where(eq(schema.work.slug, slug)).get();
-    if (!current || (opts.editTokenHash !== undefined && (current.ownerId || current.editTokenHash !== opts.editTokenHash)) || (opts.ownerId !== undefined && current.ownerId !== opts.ownerId)) throw new Error("Work permission changed");
+    if (!current || (opts.ownerId !== undefined && current.ownerId !== opts.ownerId)) throw new Error("Work permission changed");
     db.update(schema.work)
       .set({
         type: input.type,

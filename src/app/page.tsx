@@ -55,7 +55,7 @@ export default function Home() {
         <div>
           <p className="t-eyebrow">SUBMIT</p>
           <h2 className="t-h2">교실을 위해 만든 것이 있나요?</h2>
-          <p className={s.bandText}>로그인 없이 올릴 수 있어요. 운영진이 확인한 뒤 공개되고, 받은 수정 링크로 언제든 고칠 수 있습니다.</p>
+          <p className={s.bandText}>로그인하고 작품을 공유해 보세요. 올린 작품은 마이페이지에서 관리할 수 있습니다.</p>
         </div>
         <ButtonLink href="/submit" variant="primary">
           작품 올리기

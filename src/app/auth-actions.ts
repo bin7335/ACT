@@ -1,7 +1,6 @@
 "use server";
 
 import { eq, lt } from "drizzle-orm";
-import { claimWork } from "@/lib/content/mutations";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import * as oauth from "oauth4webapi";
@@ -72,16 +71,10 @@ export async function beginGoogleAction(link: boolean, _prev: AuthState, fd: For
   const oldState = jar.get(OAUTH_COOKIE)?.value;
   if (oldState) db.delete(schema.oauthAttempt).where(eq(schema.oauthAttempt.stateHash, hashToken(oldState))).run();
   db.delete(schema.oauthAttempt).where(lt(schema.oauthAttempt.expiresAt, new Date())).run();
-  db.insert(schema.oauthAttempt).values({ stateHash: hashToken(state), nonce, verifier, linkSessionHash, next: link ? "/account?linked=1" : safeReturnPath(String(fd.get("next") ?? "")), expiresAt: new Date(Date.now() + 600000) }).run();
+  db.insert(schema.oauthAttempt).values({ stateHash: hashToken(state), nonce, verifier, linkSessionHash, next: link ? "/account/settings?linked=1" : safeReturnPath(String(fd.get("next") ?? "")), expiresAt: new Date(Date.now() + 600000) }).run();
   jar.set(OAUTH_COOKIE, state, { ...cookieOptions, maxAge: 600 });
   const url = new URL(google.authorization_endpoint!);
   url.search = new URLSearchParams({ client_id: config.client.client_id, redirect_uri: config.callback, response_type: "code", scope: "openid profile", state, nonce, code_challenge: await oauth.calculatePKCECodeChallenge(verifier), code_challenge_method: "S256", prompt: "select_account" }).toString();
   redirect(url.href);
 }
 
-export async function claimWorkAction(token: string) {
-  const member = await requireMember(`/edit/${token}`);
-  const claimed = claimWork(hashToken(token), member.id);
-  if (!claimed) redirect("/account?claim=failed");
-  redirect(`/account/works/${claimed.slug}`);
-}

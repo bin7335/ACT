@@ -1,11 +1,6 @@
 import "server-only";
-import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { headers } from "next/headers";
-
-export function newEditToken() {
-  const token = randomBytes(24).toString("base64url");
-  return { token, hash: hashToken(token) };
-}
 
 export function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");

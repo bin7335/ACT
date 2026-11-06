@@ -27,6 +27,6 @@ async function Content(props: PageProps<"/account/works/[slug]">) {
     <SectionHeader eyebrow="MY WORK" title={work.title} />
     <StatusLabel status={work.status} />
     {work.reviewNote && <Notice>운영진 메모: {work.reviewNote}</Notice>}
-    <WorkForm action={memberEditWorkAction.bind(null, slug)} initial={valuesFromWork(work)} mode="edit" projects={projects} currentThumbnail={work.thumbnail} submitLabel="변경 내용 저장" />
+    <WorkForm action={memberEditWorkAction.bind(null, slug)} initial={valuesFromWork(work)} mode="edit" simple projects={projects} currentThumbnail={work.thumbnail} submitLabel="변경 내용 저장" />
   </>;
 }

@@ -67,7 +67,7 @@ export const workSchema = z.object({
     .array(z.object({ kind: z.enum(LINK_KINDS), url: httpUrl }))
     .min(1, "작품을 열 수 있는 링크를 하나 이상 넣어 주세요.")
     .max(MAX_LINKS),
-  audience: z.array(z.enum(AUDIENCES)).min(1, "대상을 하나 이상 골라 주세요."),
+  audience: z.array(z.enum(AUDIENCES)),
   subjects: z.array(z.string().max(20, "교과·영역 이름은 20자 이내로 써 주세요.")).max(5, "교과·영역은 5개까지 넣을 수 있어요."),
   makers: z.array(z.string().max(30)).min(1, "만든 사람 이름을 넣어 주세요.").max(6, "만든 사람은 6명까지 넣을 수 있어요."),
   project: z.string().trim().max(80),
@@ -93,6 +93,28 @@ export function readWorkForm(fd: FormData): WorkFormValues {
     project: str("project"),
     thumbnailAlt: str("thumbnail_alt"),
     contactEmail: str("contact_email"),
+  };
+}
+
+export function readMemberWorkForm(fd: FormData, name: string, existing?: WorkFormValues): WorkFormValues {
+  const values = readWorkForm(fd);
+  const url = String(fd.get("link_url") ?? "").trim();
+  let kind = "open";
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (host === "youtu.be" || host === "youtube.com" || host.endsWith(".youtube.com")) kind = "youtube";
+    else if (host === "apps.apple.com") kind = "store-ios";
+    else if (host === "play.google.com") kind = "store-android";
+  } catch { /* URL errors are reported by validateWork. */ }
+  return {
+    ...values,
+    links: [{ kind, url }, ...(existing?.links.slice(1) ?? [])],
+    makers: existing?.makers || name,
+    audience: existing?.audience ?? [],
+    subjects: existing?.subjects ?? "",
+    project: existing?.project ?? "",
+    thumbnailAlt: existing?.thumbnailAlt ?? "",
+    contactEmail: existing?.contactEmail ?? "",
   };
 }
 

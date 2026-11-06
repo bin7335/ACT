@@ -188,12 +188,6 @@ export async function getAnyWork(slug: string): Promise<WorkDetail | null> {
   return w ? detail(w) : null;
 }
 
-export async function getWorkByEditTokenHash(hash: string): Promise<WorkDetail | null> {
-  await connection();
-  const w = db.select().from(schema.work).where(eq(schema.work.editTokenHash, hash)).get();
-  return w ? detail(w) : null;
-}
-
 export async function getRelatedWorks(w: WorkDetail, limit = 4): Promise<WorkSummary[]> {
   await connection();
   const makerSlugs = w.makers.map((m) => m.slug);

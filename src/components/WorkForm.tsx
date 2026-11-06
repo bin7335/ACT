@@ -13,7 +13,7 @@ type Props = {
   projects: { slug: string; name: string; year: number; term: string }[];
   currentThumbnail?: string | null;
   submitLabel: string;
-  accountSubmission?: boolean;
+  simple?: boolean;
 };
 
 const TYPE_HINT: Record<string, string> = {
@@ -24,7 +24,7 @@ const TYPE_HINT: Record<string, string> = {
   material: "활동지, 슬라이드 등 수업 자료",
 };
 
-export function WorkForm({ action, initial, mode, projects, currentThumbnail, submitLabel, accountSubmission }: Props) {
+export function WorkForm({ action, initial, mode, projects, currentThumbnail, submitLabel, simple = false }: Props) {
   const [state, formAction, pending] = useActionState(action, { values: initial });
   const formRef = useRef<HTMLFormElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -73,6 +73,19 @@ export function WorkForm({ action, initial, mode, projects, currentThumbnail, su
   const described = (k: string, hint?: boolean) => [hint && `${k}-hint`, e[k as keyof typeof e] && `${k}-error`].filter(Boolean).join(" ") || undefined;
   const thumbShown = preview ?? (removeThumb ? null : currentThumbnail);
   const uid = useId();
+
+  if (simple) return <form action={formAction} onSubmit={onSubmit} onChange={() => setDirty(true)} className={f.form}>
+    {errorCount > 0 && <div ref={summaryRef} tabIndex={-1}><Notice tone="danger">{Object.values(e).join(" ")}</Notice></div>}
+    {state.saved && <Notice tone="success">저장했어요.</Notice>}
+    <input type="text" name="website" tabIndex={-1} autoComplete="off" className={f.honeypot} aria-hidden />
+    <div className={f.field}><label className={f.label} htmlFor={`${uid}-type`}>작품 유형</label><select id={`${uid}-type`} name="type" className={f.select} defaultValue={initial.type} required><option value="" disabled>선택해 주세요</option>{WORK_TYPES.map(type => <option key={type} value={type}>{WORK_TYPE_LABEL[type]}</option>)}</select></div>
+    <div className={f.field}><label className={f.label} htmlFor={`${uid}-title`}>제목</label><input id={`${uid}-title`} name="title" className={f.input} defaultValue={initial.title} required minLength={2} maxLength={40} /></div>
+    <div className={f.field}><label className={f.label} htmlFor={`${uid}-summary`}>한 줄 소개</label><input id={`${uid}-summary`} name="summary" className={f.input} defaultValue={initial.summary} required minLength={5} maxLength={80} /></div>
+    <div className={f.field}><label className={f.label} htmlFor={`${uid}-url`}>작품 링크</label><input id={`${uid}-url`} name="link_url" type="url" className={f.input} defaultValue={initial.links[0]?.url ?? ""} placeholder="https://" required /></div>
+    <div className={f.field}><label className={f.label} htmlFor={`${uid}-image`}>대표 이미지 <span className={f.hint}>(선택)</span></label><input id={`${uid}-image`} name="thumbnail" type="file" accept="image/jpeg,image/png,image/webp,image/gif" className={f.file} onChange={event => { const file = event.target.files?.[0]; setPreview(file ? URL.createObjectURL(file) : null); if (file) setRemoveThumb(false); }} /><p className={f.hint}>5MB 이하. 없으면 기본 썸네일로 표시합니다.</p>{thumbShown && <div className={f.thumbPreview}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={thumbShown} alt="대표 이미지 미리보기" /></div>}{currentThumbnail && <label className={f.check}><input type="checkbox" name="remove_thumbnail" checked={removeThumb} onChange={event => setRemoveThumb(event.target.checked)} />기존 이미지 삭제</label>}</div>
+    <div className={f.field}><label className={f.label} htmlFor={`${uid}-body`}>상세 설명 <span className={f.hint}>(선택)</span></label><textarea id={`${uid}-body`} name="body" className={f.textarea} rows={4} maxLength={5000} defaultValue={initial.body} placeholder="작품 소개나 사용 방법을 적어 주세요." /></div>
+    <Button type="submit" variant="primary" disabled={pending}>{pending ? "저장하는 중…" : submitLabel}</Button>
+  </form>;
 
   return (
     // action은 JS가 아직 로드되지 않았을 때의 POST 대비책. JS가 있으면 onSubmit이 가로챈다(React는 defaultPrevented면 action을 다시 부르지 않는다).
@@ -307,7 +320,7 @@ export function WorkForm({ action, initial, mode, projects, currentThumbnail, su
         <Button type="submit" variant="primary" disabled={pending}>
           {pending ? "저장하는 중…" : submitLabel}
         </Button>
-        {mode === "create" && <p className={f.hint}>{accountSubmission ? "제출한 작품은 마이페이지에서 관리할 수 있어요." : "제출하면 이 작품을 고칠 수 있는 개인 수정 링크를 드려요."}</p>}
+        {mode === "create" && <p className={f.hint}>제출한 작품은 마이페이지에서 관리할 수 있어요.</p>}
       </div>
     </form>
   );

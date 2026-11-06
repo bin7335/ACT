@@ -4,6 +4,13 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { TopNav, TopNavView } from "@/components/TopNav";
 import { site } from "@/lib/site";
+import { currentMember } from "@/lib/auth";
+import { AccountControl } from "@/components/AccountControl";
+
+async function HeaderAccount() {
+  const member = await currentMember();
+  return <AccountControl member={member ? { name: member.name, username: member.username } : null} />;
+}
 import "./globals.css";
 import s from "./layout.module.css";
 
@@ -36,16 +43,17 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children, auth }: LayoutProps<"/">) {
   return (
     <html lang="ko" className={`${sans.variable} ${mono.variable}`}>
       <body className={s.body}>
         <Suspense fallback={<TopNavView siteName={site.name} pathname="" />}>
-          <TopNav siteName={site.name} />
+          <TopNav siteName={site.name} account={<Suspense fallback={<span aria-label="계정 확인 중" style={{ width: 56 }} />}><HeaderAccount /></Suspense>} />
         </Suspense>
         <main id="main" className={s.main}>
           {children}
         </main>
+        {auth}
         <footer className={s.footer}>
           <div className={`container ${s.footerInner}`}>
             <div>

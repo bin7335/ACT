@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   try { origin = new URL(googleClient().callback).origin; } catch {
     return new Response("Google login is not configured", { status: 503, headers: { "Cache-Control": "no-store" } });
   }
-  const failure = (link: boolean) => NextResponse.redirect(new URL(link ? "/account?error=google" : "/login?error=google", origin), { headers: { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" } });
+  const failure = (link: boolean) => NextResponse.redirect(new URL(link ? "/account/settings?error=google" : "/login?error=google", origin), { headers: { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" } });
   const url = new URL(request.url);
   const state = url.searchParams.get("state");
   const jar = await cookies();
