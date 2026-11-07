@@ -324,4 +324,7 @@
     flex-direction: column;
     align-items: stretch;
   }
+  .submitBar > button {
+    width: 100%;
+  }
 }

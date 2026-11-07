@@ -27,7 +27,7 @@ export function AuthForm({ mode, next }: { mode: "login" | "signup"; next: strin
         <div className={f.field}><label htmlFor={`${id}-confirm`} className={f.label}>비밀번호 확인</label><input id={`${id}-confirm`} name="confirm" type="password" className={f.input} required minLength={12} maxLength={128} autoComplete="new-password" /></div>
         <label className={f.check}><input type="checkbox" name="consent" required /><span>로그인과 작품 관리를 위해 아이디, 표시 이름, 비밀번호 해시를 저장하는 데 동의합니다. 비밀번호 재설정은 아직 지원하지 않으므로 가입 후 Google 계정을 연결해 주세요.</span></label>
       </>}
-      <Button type="submit" variant="primary" disabled={pending}>{pending ? "처리하는 중…" : mode === "signup" ? "회원가입" : "아이디로 로그인"}</Button>
+      <Button type="submit" variant="primary" block disabled={pending}>{pending ? "처리하는 중…" : mode === "signup" ? "회원가입" : "아이디로 로그인"}</Button>
     </form>
   );
 }
@@ -38,7 +38,7 @@ export function GoogleForm({ next = "/account", link = false, enabled = true }: 
     <input type="hidden" name="next" value={next} />
     {state.error && <Notice tone="danger">{state.error}</Notice>}
     {link && <div className={f.field}><label htmlFor="link-password" className={f.label}>현재 비밀번호 확인</label><input id="link-password" name="password" type="password" className={f.input} autoComplete="current-password" required minLength={12} maxLength={128} /></div>}
-    <Button type="submit" disabled={pending || !enabled}>{pending ? "연결하는 중…" : link ? "Google 계정 연결" : "Google로 계속하기"}</Button>
+    <Button type="submit" block={!link} disabled={pending || !enabled}>{pending ? "연결하는 중…" : link ? "Google 계정 연결" : "Google로 계속하기"}</Button>
     {!enabled && <p className={f.hint}>Google 로그인 설정을 준비 중입니다. 아이디 로그인은 이용할 수 있어요.</p>}
   </form>;
 }

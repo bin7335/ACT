@@ -1,9 +1,8 @@
-import Link from "next/link";
 import { setMemberAdminAction } from "@/app/actions";
 import { searchMembers } from "@/lib/members";
 import { Button, Notice } from "@/components/ui";
 import f from "@/components/form.module.css";
-import p from "@/components/page.module.css";
+import s from "../account.module.css";
 
 const RESULT: Record<string, { tone?: "danger" | "success"; text: string }> = {
   granted: { tone: "success", text: "운영진 권한을 부여했어요." },
@@ -16,24 +15,30 @@ const RESULT: Record<string, { tone?: "danger" | "success"; text: string }> = {
 export function AdminMembers({ selfId, query, result }: { selfId: string; query: string; result?: string }) {
   const members = searchMembers(query);
   const notice = result ? RESULT[result] : undefined;
-  return <section id="admins" className={p.prose} aria-labelledby="admins-heading">
-    <h2 id="admins-heading" className="t-h2">운영진 권한</h2>
-    <p>가입한 회원을 이름·아이디·Google 이메일로 찾아 운영진 권한을 부여하거나 해제합니다. 운영진은 <Link href="/admin">운영진 화면</Link>에서 검수와 관리를 할 수 있어요.</p>
-    {notice && <Notice tone={notice.tone}>{notice.text}</Notice>}
-    <form action="/account/settings#admins" className={p.row} role="search">
-      <label htmlFor="member-q" className="visually-hidden">회원 검색</label>
-      <input id="member-q" name="q" type="search" defaultValue={query} placeholder="이름, 아이디, 이메일" className={f.input} maxLength={60} />
-      <Button type="submit" size="sm">검색</Button>
-    </form>
-    <p>{query ? `“${query}” 검색 결과 ${members.length}명` : `현재 운영진 ${members.length}명`}</p>
-    {members.length > 0 && <ul>{members.map(m => <li key={m.id} className={p.row}>
-      <span><strong>{m.name}</strong> {[m.username && `@${m.username}`, m.email].filter(Boolean).join(" · ") || "Google 계정"}{m.isAdmin && " · 운영진"}{m.id === selfId && " (나)"}</span>
-      {m.id !== selfId && <form action={setMemberAdminAction}>
-        <input type="hidden" name="member" value={m.id} />
-        <input type="hidden" name="q" value={query} />
-        <input type="hidden" name="grant" value={m.isAdmin ? "0" : "1"} />
-        <Button type="submit" size="sm" variant={m.isAdmin ? "ghost" : "primary"}>{m.isAdmin ? "권한 해제" : "운영진으로 지정"}</Button>
-      </form>}
-    </li>)}</ul>}
+  return <section id="admins" className={s.setting} aria-labelledby="admins-heading">
+    <div className={s.settingHead}><h2 id="admins-heading">운영진 권한</h2><p>운영진은 작품 검수와 사이트 관리를 할 수 있어요.</p></div>
+    <div className={s.settingBody}>
+      {notice && <Notice tone={notice.tone}>{notice.text}</Notice>}
+      <form action="/account/settings#admins" role="search" className={f.field}>
+        <label htmlFor="member-q" className={f.label}>회원 찾기</label>
+        <div className={s.inline}>
+          <input id="member-q" name="q" type="search" defaultValue={query} placeholder="이름, 아이디, Google 이메일" className={f.input} maxLength={60} />
+          <Button type="submit">검색</Button>
+        </div>
+      </form>
+      <p>{query ? `“${query}” 검색 결과 ${members.length}명` : `현재 운영진 ${members.length}명`}</p>
+      {members.length > 0 && <ul className={s.members}>{members.map(m => <li key={m.id} className={s.memberRow}>
+        <div>
+          <strong>{m.name}</strong>{m.isAdmin && <span className={s.badge}>운영진</span>}{m.id === selfId && <span> (나)</span>}
+          <br /><span>{[m.username && `@${m.username}`, m.email].filter(Boolean).join(" · ") || "Google 계정"}</span>
+        </div>
+        {m.id !== selfId && <form action={setMemberAdminAction}>
+          <input type="hidden" name="member" value={m.id} />
+          <input type="hidden" name="q" value={query} />
+          <input type="hidden" name="grant" value={m.isAdmin ? "0" : "1"} />
+          <Button type="submit" size="sm" variant={m.isAdmin ? "ghost" : "primary"}>{m.isAdmin ? "권한 해제" : "운영진으로 지정"}</Button>
+        </form>}
+      </li>)}</ul>}
+    </div>
   </section>;
 }

@@ -3,6 +3,7 @@
 import { eq, lt } from "drizzle-orm";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { refresh } from "next/cache";
 import * as oauth from "oauth4webapi";
 import { db, schema } from "@/lib/db";
 import { currentMember, requireMember, startMemberSession, endMemberSession, sessionHash, OAUTH_COOKIE, cookieOptions } from "@/lib/auth";
@@ -37,6 +38,15 @@ export async function credentialsAction(mode: "login" | "signup", _prev: AuthSta
   }
   await startMemberSession(memberId);
   redirect(safeReturnPath(String(fd.get("next") ?? "")));
+}
+
+export async function updateNameAction(_prev: AuthState & { saved?: boolean }, fd: FormData): Promise<AuthState & { saved?: boolean }> {
+  const member = await requireMember("/account/settings");
+  const name = String(fd.get("name") ?? "").trim();
+  if (!name || name.length > 40) return { error: "표시 이름은 1~40자로 입력해 주세요." };
+  db.update(schema.member).set({ name }).where(eq(schema.member.id, member.id)).run();
+  refresh();
+  return { saved: true };
 }
 
 export async function logoutAction() {

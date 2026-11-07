@@ -16,7 +16,7 @@ export function LoginForm() {
         </label>
         <input id="password" name="password" type="password" className={f.input} required autoComplete="current-password" autoFocus />
       </div>
-      <Button type="submit" variant="primary" disabled={pending}>
+      <Button type="submit" variant="primary" block disabled={pending}>
         {pending ? "확인하는 중…" : "들어가기"}
       </Button>
     </form>

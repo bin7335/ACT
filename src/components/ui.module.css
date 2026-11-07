@@ -1,6 +1,8 @@
 /* Figma Components 페이지의 Button / Filter Chip / Type Badge */
 
 .button {
+  /* 세로 flex 안에서도 늘어나지 않게 내용 폭을 쓴다. 가득 채울 때만 block을 쓴다. */
+  width: fit-content;
   display: inline-flex;
   align-items: center;
   justify-content: center;
