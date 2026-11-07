@@ -22,6 +22,13 @@
       "when": 1794049955536,
       "tag": "0002_chief_warstar",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1794057721772,
+      "tag": "0003_puzzling_nehzno",
+      "breakpoints": true
     }
   ]
 }

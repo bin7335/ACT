@@ -10,7 +10,9 @@ import {
   type WorkLink,
   type WorkStatus,
   type WorkSummary,
+  type WorkPurpose,
   type WorkType,
+  WORK_PURPOSES,
   WORK_TYPES,
 } from "./types";
 
@@ -44,6 +46,7 @@ function toSummary(w: WorkRow, makers: MakerRef[]): WorkSummary {
   const links = toLinks(w.links);
   return {
     slug: w.slug,
+    purpose: w.purpose,
     type: w.type,
     title: w.title,
     summary: w.summary,
@@ -70,7 +73,7 @@ const newest = [desc(schema.work.publishedAt), desc(schema.work.createdAt)];
 
 // ── Archive ──────────────────────────────────────────────────────
 
-export type ArchiveQuery = { type?: WorkType; audience?: string; subject?: string; q?: string; sort?: "new" | "title"; page?: number };
+export type ArchiveQuery = { purpose?: WorkPurpose; type?: WorkType; audience?: string; subject?: string; q?: string; sort?: "new" | "title"; page?: number };
 
 export const PAGE_SIZE = 24;
 
@@ -79,7 +82,7 @@ export type ArchiveResult = {
   total: number;
   page: number;
   pageCount: number;
-  facets: { type: Record<string, number>; audience: Record<string, number>; subject: Record<string, number>; all: number };
+  facets: { purpose: Record<string, number>; type: Record<string, number>; audience: Record<string, number>; subject: Record<string, number>; all: number };
 };
 
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, "");
@@ -89,9 +92,11 @@ export function parseArchiveQuery(sp: Record<string, string | string[] | undefin
     const v = sp[k];
     return (Array.isArray(v) ? v[0] : v)?.trim() || undefined;
   };
+  const purpose = one("use");
   const type = one("type");
   const page = Number(one("page") ?? 1);
   return {
+    purpose: (WORK_PURPOSES as readonly string[]).includes(purpose ?? "") ? (purpose as WorkPurpose) : undefined,
     type: (WORK_TYPES as readonly string[]).includes(type ?? "") ? (type as WorkType) : undefined,
     audience: one("audience"),
     subject: one("subject"),
@@ -112,6 +117,7 @@ export async function getArchive(query: ArchiveQuery): Promise<ArchiveResult> {
   const q = query.q ? norm(query.q) : "";
   const matchQ = (w: WorkSummary) =>
     !q || norm([w.title, w.summary, ...w.subjects, ...w.audience, ...w.makers.map((m) => m.name)].join(" ")).includes(q);
+  const matchPurpose = (w: WorkSummary) => !query.purpose || w.purpose === query.purpose;
   const matchType = (w: WorkSummary) => !query.type || w.type === query.type;
   const matchAud = (w: WorkSummary) => !query.audience || w.audience.includes(query.audience);
   const matchSub = (w: WorkSummary) => !query.subject || w.subjects.includes(query.subject);
@@ -124,13 +130,14 @@ export async function getArchive(query: ArchiveQuery): Promise<ArchiveResult> {
   };
   const base = all.filter(matchQ);
   const facets = {
-    type: count(base.filter(matchAud).filter(matchSub), (w) => [w.type]),
-    audience: count(base.filter(matchType).filter(matchSub), (w) => w.audience),
-    subject: count(base.filter(matchType).filter(matchAud), (w) => w.subjects),
+    purpose: count(base.filter(matchType).filter(matchAud).filter(matchSub), (w) => [w.purpose]),
+    type: count(base.filter(matchPurpose).filter(matchAud).filter(matchSub), (w) => [w.type]),
+    audience: count(base.filter(matchPurpose).filter(matchType).filter(matchSub), (w) => w.audience),
+    subject: count(base.filter(matchPurpose).filter(matchType).filter(matchAud), (w) => w.subjects),
     all: all.length,
   };
 
-  let items = base.filter(matchType).filter(matchAud).filter(matchSub);
+  let items = base.filter(matchPurpose).filter(matchType).filter(matchAud).filter(matchSub);
   if (query.sort === "title") items = [...items].sort((a, b) => a.title.localeCompare(b.title, "ko"));
   const total = items.length;
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -201,7 +208,7 @@ export async function getRelatedWorks(w: WorkDetail, limit = 4): Promise<WorkSum
     : [];
   const rows = db.select().from(schema.work).where(published).orderBy(...newest).all().filter((r) => r.slug !== w.slug);
   const score = (r: WorkRow) =>
-    (bySameMaker.includes(r.slug) ? 3 : 0) + (r.type === w.type ? 1 : 0) + r.subjects.filter((s) => w.subjects.includes(s)).length * 2;
+    (bySameMaker.includes(r.slug) ? 3 : 0) + (r.purpose === w.purpose ? 1 : 0) + (r.type === w.type ? 1 : 0) + r.subjects.filter((s) => w.subjects.includes(s)).length * 2;
   return summaries(rows.map((r) => [r, score(r)] as const).filter(([, s]) => s > 0).sort((a, b) => b[1] - a[1]).slice(0, limit).map(([r]) => r));
 }
 

@@ -32,6 +32,7 @@ export async function createWork(input: WorkInput, opts: { thumbnail: string | n
     db.insert(schema.work)
       .values({
         slug,
+        purpose: input.purpose,
         type: input.type,
         title: input.title,
         summary: input.summary,
@@ -63,6 +64,7 @@ export async function updateWork(slug: string, input: WorkInput, opts: { thumbna
     if (!current || (opts.ownerId !== undefined && current.ownerId !== opts.ownerId)) throw new Error("Work permission changed");
     db.update(schema.work)
       .set({
+        purpose: input.purpose,
         type: input.type,
         title: input.title,
         summary: input.summary,

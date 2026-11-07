@@ -30,7 +30,8 @@ const body = (why: string, how: string, use: string) => [
 export const works: Work[] = [
   {
     slug: "fraction-pizza",
-    type: "web-tool",
+    purpose: "class",
+    type: "web-app",
     title: "분수 피자 가게",
     summary: "피자를 나누며 분수의 크기를 비교하는 교실용 웹 도구",
     body: body(
@@ -50,6 +51,7 @@ export const works: Work[] = [
   },
   {
     slug: "emotion-weather",
+    purpose: "class",
     type: "mobile-app",
     title: "오늘의 감정 날씨",
     summary: "아침 조회 시간에 학생이 감정을 날씨로 기록하는 앱",
@@ -73,6 +75,7 @@ export const works: Work[] = [
   },
   {
     slug: "science-30s",
+    purpose: "class",
     type: "video",
     title: "30초 과학 실험",
     summary: "교실에서 바로 따라 하는 안전한 과학 실험 쇼츠 모음",
@@ -93,6 +96,7 @@ export const works: Work[] = [
   },
   {
     slug: "class-roles",
+    purpose: "work",
     type: "web-app",
     title: "우리 반 역할 배정판",
     summary: "1인 1역을 공정하게 돌려 배정하고 기록하는 학급 운영 웹앱",
@@ -116,6 +120,7 @@ export const works: Work[] = [
   },
   {
     slug: "dokdo-worksheet",
+    purpose: "class",
     type: "material",
     title: "독도 탐구 활동지",
     summary: "지도와 사료로 독도를 탐구하는 프로젝트 수업 자료 세트",
@@ -136,7 +141,8 @@ export const works: Work[] = [
   },
   {
     slug: "typing-race",
-    type: "web-tool",
+    purpose: "play",
+    type: "web-app",
     title: "타자 연습 레이스",
     summary: "학급 대항으로 한글 타자를 연습하는 게임형 도구",
     body: body(
@@ -156,6 +162,7 @@ export const works: Work[] = [
   },
   {
     slug: "record-helper",
+    purpose: "work",
     type: "web-app",
     title: "생기부 문장 도우미",
     summary: "관찰 기록을 바탕으로 문장 초안을 정리해 주는 교사 업무 도구",
@@ -165,7 +172,7 @@ export const works: Work[] = [
       "학기 중 수시 기록, 학기 말 정리.",
     ),
     links: [{ kind: "open", url: "https://example.com/record-helper" }],
-    audience: ["교사 업무"],
+    audience: [],
     subjects: ["행정"],
     makers: ["kim-haneul"],
     status: "published",
@@ -175,6 +182,7 @@ export const works: Work[] = [
   },
   {
     slug: "sign-hello",
+    purpose: "class",
     type: "video",
     title: "수어로 인사해요",
     summary: "하루 한 문장 수어 인사 시리즈",
@@ -195,7 +203,8 @@ export const works: Work[] = [
   },
   {
     slug: "dokdo-map-quiz",
-    type: "web-tool",
+    purpose: "play",
+    type: "web-app",
     title: "독도 지도 퀴즈",
     summary: "옛 지도 속 독도를 찾아보는 탐구형 퀴즈 도구",
     body: body(
@@ -215,6 +224,7 @@ export const works: Work[] = [
   },
   {
     slug: "lunch-menu-graph",
+    purpose: "class",
     type: "material",
     title: "급식 메뉴 그래프 만들기",
     summary: "우리 학교 급식 메뉴로 그래프를 그려 보는 통계 수업 자료",

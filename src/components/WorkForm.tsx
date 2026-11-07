@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useId, useRef, useState, startTransition, type FormEvent } from "react";
-import { AUDIENCES, LINK_KINDS, LINK_LABEL, WORK_TYPE_LABEL, WORK_TYPES } from "@/lib/content/types";
+import { AUDIENCES, LINK_KINDS, LINK_LABEL, WORK_PURPOSE_HINT, WORK_PURPOSE_LABEL, WORK_PURPOSES, WORK_TYPE_LABEL, WORK_TYPES } from "@/lib/content/types";
 import { MAX_LINKS, type WorkFormState, type WorkFormValues } from "@/lib/content/form";
 import { Button, Notice } from "./ui";
 import f from "./form.module.css";
@@ -17,8 +17,7 @@ type Props = {
 };
 
 const TYPE_HINT: Record<string, string> = {
-  "web-tool": "브라우저에서 바로 쓰는 수업 도구",
-  "web-app": "기록·관리 기능이 있는 웹 서비스",
+  "web-app": "브라우저에서 바로 여는 웹 서비스",
   "mobile-app": "스토어에서 받는 앱",
   video: "YouTube 등에 올린 영상",
   material: "활동지, 슬라이드 등 수업 자료",
@@ -78,7 +77,8 @@ export function WorkForm({ action, initial, mode, projects, currentThumbnail, su
     {errorCount > 0 && <div ref={summaryRef} tabIndex={-1}><Notice tone="danger">{Object.values(e).join(" ")}</Notice></div>}
     {state.saved && <Notice tone="success">저장했어요.</Notice>}
     <input type="text" name="website" tabIndex={-1} autoComplete="off" className={f.honeypot} aria-hidden />
-    <div className={f.field}><label className={f.label} htmlFor={`${uid}-type`}>작품 유형</label><select id={`${uid}-type`} name="type" className={f.select} defaultValue={initial.type} required><option value="" disabled>선택해 주세요</option>{WORK_TYPES.map(type => <option key={type} value={type}>{WORK_TYPE_LABEL[type]}</option>)}</select></div>
+    <div className={f.field}><label className={f.label} htmlFor={`${uid}-purpose`}>어디에 쓰나요?</label><select id={`${uid}-purpose`} name="purpose" className={f.select} defaultValue={initial.purpose} required><option value="" disabled>선택해 주세요</option>{WORK_PURPOSES.map(u => <option key={u} value={u}>{WORK_PURPOSE_LABEL[u]} — {WORK_PURPOSE_HINT[u]}</option>)}</select></div>
+    <div className={f.field}><label className={f.label} htmlFor={`${uid}-type`}>작품 형태</label><select id={`${uid}-type`} name="type" className={f.select} defaultValue={initial.type} required><option value="" disabled>선택해 주세요</option>{WORK_TYPES.map(type => <option key={type} value={type}>{WORK_TYPE_LABEL[type]}</option>)}</select></div>
     <div className={f.field}><label className={f.label} htmlFor={`${uid}-title`}>제목</label><input id={`${uid}-title`} name="title" className={f.input} defaultValue={initial.title} required minLength={2} maxLength={40} /></div>
     <div className={f.field}><label className={f.label} htmlFor={`${uid}-summary`}>한 줄 소개</label><input id={`${uid}-summary`} name="summary" className={f.input} defaultValue={initial.summary} required minLength={5} maxLength={80} /></div>
     <div className={f.field}><label className={f.label} htmlFor={`${uid}-url`}>작품 링크</label><input id={`${uid}-url`} name="link_url" type="url" className={f.input} defaultValue={initial.links[0]?.url ?? ""} placeholder="https://" required /></div>
@@ -109,9 +109,21 @@ export function WorkForm({ action, initial, mode, projects, currentThumbnail, su
         <legend className={f.legend}>
           <span className="t-eyebrow">01</span> 어떤 작품인가요?
         </legend>
-        <div className={f.typeGrid} role="radiogroup" aria-describedby={described("type")}>
+        <p className={f.label} id="purpose-label">어디에 쓰나요?</p>
+        <div className={f.typeGrid} role="radiogroup" aria-labelledby="purpose-label" aria-describedby={described("purpose")}>
+          {WORK_PURPOSES.map((u) => (
+            <label key={u} className={f.typeOption} data-purpose={u}>
+              <input type="radio" name="purpose" value={u} defaultChecked={initial.purpose === u} required />
+              <span className={f.typeName}>{WORK_PURPOSE_LABEL[u]}</span>
+              <span className={f.typeHint}>{WORK_PURPOSE_HINT[u]}</span>
+            </label>
+          ))}
+        </div>
+        {err("purpose")}
+        <p className={f.label} id="type-label">어떤 형태인가요?</p>
+        <div className={f.typeGrid} role="radiogroup" aria-labelledby="type-label" aria-describedby={described("type")}>
           {WORK_TYPES.map((t) => (
-            <label key={t} className={f.typeOption} data-type={t}>
+            <label key={t} className={f.typeOption}>
               <input type="radio" name="type" value={t} defaultChecked={initial.type === t} required />
               <span className={f.typeName}>{WORK_TYPE_LABEL[t]}</span>
               <span className={f.typeHint}>{TYPE_HINT[t]}</span>
@@ -142,7 +154,7 @@ export function WorkForm({ action, initial, mode, projects, currentThumbnail, su
               {summary.length}/80
             </span>
           </label>
-          <input id={`${uid}-summary`} name="summary" className={f.input} defaultValue={initial.summary} required minLength={5} maxLength={80} placeholder="예: 피자를 나누며 분수의 크기를 비교하는 교실용 웹 도구" onChange={(ev) => setSummary(ev.target.value)} aria-invalid={!!e.summary} aria-describedby={described("summary")} />
+          <input id={`${uid}-summary`} name="summary" className={f.input} defaultValue={initial.summary} required minLength={5} maxLength={80} placeholder="예: 피자를 나누며 분수의 크기를 비교하는 교실용 웹앱" onChange={(ev) => setSummary(ev.target.value)} aria-invalid={!!e.summary} aria-describedby={described("summary")} />
           {err("summary")}
         </div>
         <div className={f.field}>

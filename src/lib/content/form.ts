@@ -1,11 +1,12 @@
 import { z } from "zod";
-import { AUDIENCES, LINK_KINDS, WORK_TYPES } from "./types";
+import { AUDIENCES, LINK_KINDS, WORK_PURPOSES, WORK_TYPES } from "./types";
 
 // 작품 등록/수정 폼 — 클라이언트(폼 상태)와 서버(검증)가 함께 쓴다.
 
 export const MAX_LINKS = 4;
 
 export type WorkFormValues = {
+  purpose: string;
   type: string;
   title: string;
   summary: string;
@@ -26,6 +27,7 @@ export type WorkFormState = {
 };
 
 export const emptyValues: WorkFormValues = {
+  purpose: "",
   type: "",
   title: "",
   summary: "",
@@ -59,7 +61,8 @@ const httpUrl = z
   }, "http:// 또는 https://로 시작하는 전체 주소를 넣어 주세요.");
 
 export const workSchema = z.object({
-  type: z.enum(WORK_TYPES, { error: "작품 유형을 골라 주세요." }),
+  purpose: z.enum(WORK_PURPOSES, { error: "어디에 쓰는 작품인지 골라 주세요." }),
+  type: z.enum(WORK_TYPES, { error: "작품 형태를 골라 주세요." }),
   title: z.string().trim().min(2, "제목을 2자 이상 써 주세요.").max(40, "제목은 40자 이내로 써 주세요."),
   summary: z.string().trim().min(5, "한 줄 설명을 써 주세요.").max(80, "한 줄 설명은 80자 이내로 써 주세요."),
   body: z.string().trim().max(5000, "설명은 5000자 이내로 써 주세요."),
@@ -82,6 +85,7 @@ export function readWorkForm(fd: FormData): WorkFormValues {
   const kinds = fd.getAll("link_kind").map(String);
   const urls = fd.getAll("link_url").map(String);
   return {
+    purpose: str("purpose"),
     type: str("type"),
     title: str("title"),
     summary: str("summary"),
@@ -135,6 +139,7 @@ export function validateWork(values: WorkFormValues) {
 }
 
 export function valuesFromWork(w: {
+  purpose: string;
   type: string;
   title: string;
   summary: string;
@@ -148,6 +153,7 @@ export function valuesFromWork(w: {
   contactEmail?: string | null;
 }): WorkFormValues {
   return {
+    purpose: w.purpose,
     type: w.type,
     title: w.title,
     summary: w.summary,

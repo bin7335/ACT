@@ -36,7 +36,7 @@ async function Content(props: PageProps<"/account">) {
           <Link href={`/account/works/${work.slug}`} className={s.workTitle}>{work.title}</Link>
           <p className={s.workSummary}>{work.summary}</p>
           <div className={s.workMeta}>
-            <TypeBadge type={work.type} />
+            <TypeBadge purpose={work.purpose} type={work.type} />
             <StatusLabel status={work.status} />
             <span>{formatDate(work.updatedAt)} 수정</span>
             {work.reviewNote && <span className={s.note}>운영진 메모 있음</span>}

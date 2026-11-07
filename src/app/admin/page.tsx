@@ -89,7 +89,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/admin">["
                 <tr key={w.slug}>
                   <td>
                     <div className={s.workCell}>
-                      <TypeBadge type={w.type} />
+                      <TypeBadge purpose={w.purpose} type={w.type} />
                       <Link href={`/admin/works/${w.slug}`} className={s.title}>
                         {w.title}
                       </Link>

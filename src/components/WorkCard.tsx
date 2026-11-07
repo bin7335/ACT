@@ -11,9 +11,9 @@ export function WorkCard({ work, priority }: { work: WorkSummary; priority?: boo
   return (
     <article className={s.card}>
       <Link href={`/works/${work.slug}`} className={s.thumb}>
-        <Thumbnail src={work.thumbnail} alt={work.thumbnailAlt} title={work.title} type={work.type} priority={priority} />
+        <Thumbnail src={work.thumbnail} alt={work.thumbnailAlt} title={work.title} purpose={work.purpose} priority={priority} />
         <span className={s.badge}>
-          <TypeBadge type={work.type} />
+          <TypeBadge purpose={work.purpose} type={work.type} />
         </span>
       </Link>
       <div className={s.body}>

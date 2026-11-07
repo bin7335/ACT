@@ -6,12 +6,12 @@ import { Chip, ButtonLink } from "@/components/ui";
 import { WorkGrid, WorkGridSkeleton } from "@/components/WorkCard";
 import p from "@/components/page.module.css";
 import { allSubjects, getArchive, parseArchiveQuery, type ArchiveQuery } from "@/lib/content/queries";
-import { AUDIENCES, WORK_TYPE_LABEL, WORK_TYPES } from "@/lib/content/types";
+import { AUDIENCES, WORK_PURPOSE_LABEL, WORK_PURPOSES, WORK_TYPE_LABEL, WORK_TYPES } from "@/lib/content/types";
 import { withParams } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "작품",
-  description: "선생님들이 만든 웹 도구, 웹앱, 모바일 앱, 영상, 수업 자료를 유형·대상·교과로 찾아보세요.",
+  description: "선생님들이 만든 수업 도구, 업무 도구, 교실 놀이를 용도·형태·대상·교과로 찾아보세요.",
   alternates: { canonical: "/works" },
 };
 
@@ -38,6 +38,7 @@ async function Archive({ searchParams }: { searchParams: PageProps<"/works">["se
   const query = parseArchiveQuery(await searchParams);
   const [result, subjects] = await Promise.all([getArchive(query), allSubjects()]);
   const current: Record<string, string | undefined> = {
+    use: query.purpose,
     type: query.type,
     audience: query.audience,
     subject: query.subject,
@@ -45,8 +46,8 @@ async function Archive({ searchParams }: { searchParams: PageProps<"/works">["se
     sort: query.sort === "title" ? "title" : undefined,
   };
   const href = (patch: Record<string, string | undefined>) => withParams("/works", current, patch);
-  const filtered = !!(query.type || query.audience || query.subject || query.q);
-  const typeTotal = Object.values(result.facets.type).reduce((a, b) => a + b, 0);
+  const filtered = !!(query.purpose || query.type || query.audience || query.subject || query.q);
+  const purposeTotal = Object.values(result.facets.purpose).reduce((a, b) => a + b, 0);
 
   return (
     <>
@@ -62,10 +63,10 @@ async function Archive({ searchParams }: { searchParams: PageProps<"/works">["se
 
       <div className={p.filters}>
         <div className={p.filterTop}>
-          <nav aria-label="유형" className={p.row}>
-            <Chip href={href({ type: undefined })} label="전체" count={typeTotal} selected={!query.type} />
-            {WORK_TYPES.map((t) => (
-              <Chip key={t} href={href({ type: t })} label={WORK_TYPE_LABEL[t]} count={result.facets.type[t] ?? 0} selected={query.type === t} />
+          <nav aria-label="용도" className={p.row}>
+            <Chip href={href({ use: undefined })} label="전체" count={purposeTotal} selected={!query.purpose} />
+            {WORK_PURPOSES.map((u) => (
+              <Chip key={u} href={href({ use: u })} label={WORK_PURPOSE_LABEL[u]} count={result.facets.purpose[u] ?? 0} selected={query.purpose === u} />
             ))}
           </nav>
           <form action="/works" role="search" className={p.search}>
@@ -81,6 +82,12 @@ async function Archive({ searchParams }: { searchParams: PageProps<"/works">["se
             <button className={p.searchBtn}>검색</button>
           </form>
         </div>
+        <nav aria-label="형태" className={p.row}>
+          <Chip href={href({ type: undefined })} label="모든 형태" selected={!query.type} />
+          {WORK_TYPES.map((t) => (
+            <Chip key={t} href={href({ type: t })} label={WORK_TYPE_LABEL[t]} count={result.facets.type[t] ?? 0} selected={query.type === t} />
+          ))}
+        </nav>
         <nav aria-label="대상" className={p.row}>
           <Chip href={href({ audience: undefined })} label="모든 대상" selected={!query.audience} />
           {AUDIENCES.map((a) => (

@@ -82,8 +82,8 @@ test("only the owner can edit a member work", async () => {
   const { db, schema } = await import("../src/lib/db");
   const { updateWork } = await import("../src/lib/content/mutations");
   db.insert(schema.member).values({ id: "owner", name: "Owner" }).run();
-  db.insert(schema.work).values({ slug: "member-work", type: "web-tool", title: "Original", summary: "A member work", ownerId: "owner" }).run();
-  const input = { type: "web-tool" as const, title: "Changed", summary: "Changed summary", body: "", makers: [], links: [], audience: [], subjects: [], project: "", thumbnailAlt: "", contactEmail: "" };
+  db.insert(schema.work).values({ slug: "member-work", type: "web-app", title: "Original", summary: "A member work", ownerId: "owner" }).run();
+  const input = { purpose: "class" as const, type: "web-app" as const, title: "Changed", summary: "Changed summary", body: "", makers: [], links: [], audience: [], subjects: [], project: "", thumbnailAlt: "", contactEmail: "" };
   await assert.rejects(updateWork("member-work", input, { ownerId: "other" }));
   await updateWork("member-work", input, { ownerId: "owner" });
   assert.equal(db.select().from(schema.work).where(eq(schema.work.slug, "member-work")).get()?.title, "Changed");
@@ -92,7 +92,7 @@ test("only the owner can edit a member work", async () => {
 test("minimal member submission derives author and link kind, preserving existing metadata", async () => {
   const { readMemberWorkForm, validateWork, emptyValues } = await import("../src/lib/content/form");
   const fd = new FormData();
-  for (const [key, value] of Object.entries({ type: "video", title: "Test video", summary: "A useful classroom video", link_url: "https://youtu.be/abc", makers: "Forged author", project: "forged" })) fd.set(key, value);
+  for (const [key, value] of Object.entries({ purpose: "class", type: "video", title: "Test video", summary: "A useful classroom video", link_url: "https://youtu.be/abc", makers: "Forged author", project: "forged" })) fd.set(key, value);
   const values = readMemberWorkForm(fd, "Teacher");
   assert.equal(values.makers, "Teacher");
   assert.equal(values.links[0].kind, "youtube");

@@ -6,7 +6,7 @@ import { getAnyWork } from "./content/queries";
 
 export async function ownWorks() {
   const member = await requireMember();
-  return db.select({ slug: schema.work.slug, title: schema.work.title, summary: schema.work.summary, type: schema.work.type, status: schema.work.status, reviewNote: schema.work.reviewNote, updatedAt: schema.work.updatedAt })
+  return db.select({ slug: schema.work.slug, title: schema.work.title, summary: schema.work.summary, purpose: schema.work.purpose, type: schema.work.type, status: schema.work.status, reviewNote: schema.work.reviewNote, updatedAt: schema.work.updatedAt })
     .from(schema.work).where(eq(schema.work.ownerId, member.id)).orderBy(desc(schema.work.updatedAt)).all();
 }
 

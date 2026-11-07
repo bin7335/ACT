@@ -36,7 +36,7 @@ export default async function AdminWorkPage(props: PageProps<"/admin/works/[slug
       <div className={s.reviewGrid}>
         <div className={s.reviewMain}>
           <div className={s.preview}>
-            <Thumbnail src={work.thumbnail} alt={work.thumbnailAlt} title={work.title} type={work.type} sizes="640px" />
+            <Thumbnail src={work.thumbnail} alt={work.thumbnailAlt} title={work.title} purpose={work.purpose} sizes="640px" />
           </div>
           <ul className={s.links}>
             {work.links.map((l) => (

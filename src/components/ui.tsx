@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
-import { WORK_STATUS_LABEL, WORK_TYPE_LABEL, type WorkStatus, type WorkType } from "@/lib/content/types";
+import { WORK_PURPOSE_LABEL, WORK_STATUS_LABEL, WORK_TYPE_LABEL, type WorkPurpose, type WorkStatus, type WorkType } from "@/lib/content/types";
 import s from "./ui.module.css";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
@@ -39,10 +39,10 @@ export function Chip({ href, label, count, selected }: { href: string; label: st
   );
 }
 
-export function TypeBadge({ type }: { type: WorkType }) {
+export function TypeBadge({ purpose, type }: { purpose: WorkPurpose; type: WorkType }) {
   return (
-    <span className={s.badge} data-type={type}>
-      {WORK_TYPE_LABEL[type]}
+    <span className={s.badge} data-purpose={purpose}>
+      {WORK_PURPOSE_LABEL[purpose]} · {WORK_TYPE_LABEL[type]}
     </span>
   );
 }

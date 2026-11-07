@@ -1,6 +1,6 @@
 # ACT · 선생님 작품 아카이브
 
-선생님들이 만든 웹 도구, 웹앱, 모바일 앱, 영상, 수업 자료를 모으는 연구회 아카이브이자 포트폴리오.
+선생님들이 만든 수업 도구, 업무 도구, 교실 놀이를 모으는 연구회 아카이브이자 포트폴리오.
 원칙과 범위는 [CONSTITUTION.md](CONSTITUTION.md), 디자인은 [Figma · ACT Design System](https://www.figma.com/design/cx1yV50h131KN4obIpi76H)을 따른다.
 
 ## 스택

@@ -2,6 +2,6 @@
 export const site = {
   shortName: "ACT",
   name: "선생님 작품 아카이브",
-  description: "선생님들이 직접 만든 웹 도구, 웹앱, 모바일 앱, 영상, 수업 자료를 모은 연구회 아카이브",
+  description: "선생님들이 직접 만든 수업 도구, 업무 도구, 교실 놀이를 모은 연구회 아카이브",
   url: (process.env.SITE_URL ?? "http://localhost:3000").replace(/\/$/, ""),
 };

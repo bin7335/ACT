@@ -9,7 +9,7 @@ import { ExternalButton, Notice, TypeBadge } from "@/components/ui";
 import { WorkGrid } from "@/components/WorkCard";
 import p from "@/components/page.module.css";
 import { getPublishedWork, getRelatedWorks } from "@/lib/content/queries";
-import { LINK_LABEL, WORK_TYPE_LABEL, type WorkLink } from "@/lib/content/types";
+import { LINK_LABEL, WORK_PURPOSE_LABEL, WORK_TYPE_LABEL, type WorkLink } from "@/lib/content/types";
 import { formatDate } from "@/lib/format";
 import { youtubeId } from "@/lib/remote-image";
 import { site } from "@/lib/site";
@@ -40,7 +40,9 @@ export default async function WorkPage(props: PageProps<"/works/[slug]">) {
       <nav aria-label="위치" className={s.crumbs}>
         <Link href="/works">작품</Link>
         <span aria-hidden>/</span>
-        <Link href={`/works?type=${work.type}`}>{WORK_TYPE_LABEL[work.type]}</Link>
+        <Link href={`/works?use=${work.purpose}`}>{WORK_PURPOSE_LABEL[work.purpose]}</Link>
+        <span aria-hidden>/</span>
+        <Link href={`/works?use=${work.purpose}&type=${work.type}`}>{WORK_TYPE_LABEL[work.type]}</Link>
       </nav>
 
       <div className={s.layout}>
@@ -55,7 +57,7 @@ export default async function WorkPage(props: PageProps<"/works/[slug]">) {
                 loading="lazy"
               />
             ) : (
-              <Thumbnail src={work.thumbnail} alt={work.thumbnailAlt} title={work.title} type={work.type} priority sizes="(max-width: 1023px) 100vw, 760px" />
+              <Thumbnail src={work.thumbnail} alt={work.thumbnailAlt} title={work.title} purpose={work.purpose} priority sizes="(max-width: 1023px) 100vw, 760px" />
             )}
           </div>
           <Prose text={work.body} />
@@ -63,7 +65,7 @@ export default async function WorkPage(props: PageProps<"/works/[slug]">) {
 
         <aside className={s.aside}>
           <div className={s.head}>
-            <TypeBadge type={work.type} />
+            <TypeBadge purpose={work.purpose} type={work.type} />
             <h1 className="t-h1">{work.title}</h1>
             <p className={s.summary}>{work.summary}</p>
           </div>
@@ -155,7 +157,7 @@ export default async function WorkPage(props: PageProps<"/works/[slug]">) {
             <h2 id="related" className="t-h3">
               함께 보면 좋은 작품
             </h2>
-            <Link href={`/works?type=${work.type}`}>{WORK_TYPE_LABEL[work.type]} 더 보기 →</Link>
+            <Link href={`/works?use=${work.purpose}`}>{WORK_PURPOSE_LABEL[work.purpose]} 더 보기 →</Link>
           </div>
           <WorkGrid works={related} />
         </section>

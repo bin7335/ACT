@@ -118,25 +118,17 @@
   border-radius: var(--radius-full);
   background: currentColor;
 }
-.badge[data-type="web-tool"] {
-  color: var(--color-type-web-tool-fg);
-  background: var(--color-type-web-tool-bg);
+.badge[data-purpose="class"] {
+  color: var(--color-purpose-class-fg);
+  background: var(--color-purpose-class-bg);
 }
-.badge[data-type="web-app"] {
-  color: var(--color-type-web-app-fg);
-  background: var(--color-type-web-app-bg);
+.badge[data-purpose="work"] {
+  color: var(--color-purpose-work-fg);
+  background: var(--color-purpose-work-bg);
 }
-.badge[data-type="mobile-app"] {
-  color: var(--color-type-mobile-app-fg);
-  background: var(--color-type-mobile-app-bg);
-}
-.badge[data-type="video"] {
-  color: var(--color-type-video-fg);
-  background: var(--color-type-video-bg);
-}
-.badge[data-type="material"] {
-  color: var(--color-type-material-fg);
-  background: var(--color-type-material-bg);
+.badge[data-purpose="play"] {
+  color: var(--color-purpose-play-fg);
+  background: var(--color-purpose-play-bg);
 }
 
 .status {

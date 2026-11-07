@@ -31,6 +31,7 @@ db.transaction((tx) => {
     tx.insert(schema.work)
       .values({
         slug: w.slug,
+        purpose: w.purpose,
         type: w.type,
         title: w.title,
         summary: w.summary,

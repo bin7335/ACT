@@ -57,7 +57,8 @@ export const work = sqliteTable(
   "work",
   {
     slug: text("slug").primaryKey(),
-    type: text("type", { enum: ["web-tool", "web-app", "mobile-app", "video", "material"] }).notNull(),
+    purpose: text("purpose", { enum: ["class", "work", "play"] }).notNull().default("class"),
+    type: text("type", { enum: ["web-app", "mobile-app", "video", "material"] }).notNull(),
     title: text("title").notNull(),
     summary: text("summary").notNull(),
     body: text("body").notNull().default(""),
