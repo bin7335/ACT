@@ -74,7 +74,7 @@ export async function beginGoogleAction(link: boolean, _prev: AuthState, fd: For
   db.insert(schema.oauthAttempt).values({ stateHash: hashToken(state), nonce, verifier, linkSessionHash, next: link ? "/account/settings?linked=1" : safeReturnPath(String(fd.get("next") ?? "")), expiresAt: new Date(Date.now() + 600000) }).run();
   jar.set(OAUTH_COOKIE, state, { ...cookieOptions, maxAge: 600 });
   const url = new URL(google.authorization_endpoint!);
-  url.search = new URLSearchParams({ client_id: config.client.client_id, redirect_uri: config.callback, response_type: "code", scope: "openid profile", state, nonce, code_challenge: await oauth.calculatePKCECodeChallenge(verifier), code_challenge_method: "S256", prompt: "select_account" }).toString();
+  url.search = new URLSearchParams({ client_id: config.client.client_id, redirect_uri: config.callback, response_type: "code", scope: "openid profile email", state, nonce, code_challenge: await oauth.calculatePKCECodeChallenge(verifier), code_challenge_method: "S256", prompt: "select_account" }).toString();
   redirect(url.href);
 }
 

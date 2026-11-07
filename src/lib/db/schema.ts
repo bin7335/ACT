@@ -9,12 +9,16 @@ export const member = sqliteTable("member", {
   username: text("username").unique(),
   passwordHash: text("password_hash"),
   name: text("name").notNull(),
+  /** 운영진 권한. 회원가입만으로는 얻지 않으며 기존 운영진이 부여한다. */
+  isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
   createdAt: ts("created_at").notNull().default(now),
 });
 
 export const googleIdentity = sqliteTable("google_identity", {
   subject: text("subject").primaryKey(),
   memberId: text("member_id").notNull().unique().references(() => member.id, { onDelete: "cascade" }),
+  /** Google이 확인한 이메일(비공개). 운영진의 회원 검색과 초기 운영진 지정에만 쓴다. */
+  email: text("email"),
 });
 
 export const memberSession = sqliteTable("member_session", {

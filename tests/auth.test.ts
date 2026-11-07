@@ -119,3 +119,19 @@ test("Google identity linking never merges or transfers accounts", async () => {
   assert.throws(() => resolveGoogleMember("google-c", "Same Name", "local-a"));
   assert.equal(db.select().from(schema.googleIdentity).where(eq(schema.googleIdentity.memberId, "local-a")).get()?.subject, "google-b");
 });
+
+test("Google email is stored for admin member search", async () => {
+  const { resolveGoogleMember } = await import("../src/lib/google-auth");
+  const { searchMembers, setMemberAdmin } = await import("../src/lib/members");
+  const { db, schema } = await import("../src/lib/db");
+  const owner = resolveGoogleMember("google-owner", "Owner", null, "owner@example.test");
+  const other = resolveGoogleMember("google-other", "Other_%", null, "other@example.test");
+  const isAdmin = (id: string) => db.select().from(schema.member).where(eq(schema.member.id, id)).get()?.isAdmin;
+  assert.equal(isAdmin(owner), false);
+  assert.deepEqual(searchMembers("OTHER@example").map(m => m.id), [other]);
+  assert.deepEqual(searchMembers("_%").map(m => m.id), [other]);
+  assert.deepEqual(searchMembers("").map(m => m.id), []);
+  setMemberAdmin(owner, true);
+  assert.equal(isAdmin(owner), true);
+  assert.deepEqual(searchMembers("").map(m => m.id), [owner]);
+});

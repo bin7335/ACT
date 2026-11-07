@@ -9,7 +9,7 @@ import { AccountControl } from "@/components/AccountControl";
 
 async function HeaderAccount() {
   const member = await currentMember();
-  return <AccountControl member={member ? { name: member.name, username: member.username } : null} />;
+  return <AccountControl member={member ? { name: member.name, username: member.username, isAdmin: member.isAdmin } : null} />;
 }
 import "./globals.css";
 import s from "./layout.module.css";

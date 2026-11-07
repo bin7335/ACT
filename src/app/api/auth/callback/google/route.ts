@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     } else if (await currentMember()) {
       return failure(true);
     }
-    const id = resolveGoogleMember(identity.subject, identity.name, linkMemberId);
+    const id = resolveGoogleMember(identity.subject, identity.name, linkMemberId, identity.email);
     await startMemberSession(id);
     return NextResponse.redirect(new URL(safeReturnPath(attempt.next), origin), { headers: { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" } });
   } catch {

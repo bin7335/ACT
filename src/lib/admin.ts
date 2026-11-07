@@ -2,9 +2,10 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { currentMember } from "./auth";
 import { hmac, safeEqual } from "./security";
 
-// 회원 로그인이 생기기 전까지 운영진 화면은 공용 비밀번호(ADMIN_PASSWORD)로 잠근다.
+// 운영진 화면은 운영진 권한이 있는 회원 계정 또는 공용 비밀번호(ADMIN_PASSWORD)로 들어간다.
 const COOKIE = "act_admin";
 const MAX_AGE = 60 * 60 * 12;
 
@@ -41,9 +42,9 @@ export async function endAdminSession() {
 export async function isAdmin() {
   await connection();
   const v = (await cookies()).get(COOKIE)?.value;
-  if (!v) return false;
-  const [exp, sig] = v.split(".");
-  return !!exp && !!sig && Number(exp) > Date.now() && safeEqual(sig, hmac(secret(), exp));
+  const [exp, sig] = v?.split(".") ?? [];
+  if (exp && sig && Number(exp) > Date.now() && safeEqual(sig, hmac(secret(), exp))) return true;
+  return !!(await currentMember())?.isAdmin;
 }
 
 export async function requireAdmin() {

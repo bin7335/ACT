@@ -15,6 +15,13 @@
       "when": 1793965664065,
       "tag": "0001_square_pestilence",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794049955536,
+      "tag": "0002_chief_warstar",
+      "breakpoints": true
     }
   ]
 }

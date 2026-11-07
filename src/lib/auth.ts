@@ -22,7 +22,7 @@ export async function currentMember() {
   await connection();
   const hash = await sessionHash();
   if (!hash) return null;
-  return db.select({ id: schema.member.id, name: schema.member.name, username: schema.member.username })
+  return db.select({ id: schema.member.id, name: schema.member.name, username: schema.member.username, isAdmin: schema.member.isAdmin })
     .from(schema.memberSession).innerJoin(schema.member, eq(schema.memberSession.memberId, schema.member.id))
     .where(and(eq(schema.memberSession.tokenHash, hash), gt(schema.memberSession.expiresAt, new Date()))).get() ?? null;
 }

@@ -7,7 +7,7 @@ import { logoutAction } from "@/app/auth-actions";
 import { buttonClass } from "./ui";
 import s from "./AccountControl.module.css";
 
-export function AccountControl({ member }: { member: { name: string; username: string | null } | null }) {
+export function AccountControl({ member }: { member: { name: string; username: string | null; isAdmin: boolean } | null }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -42,7 +42,7 @@ export function AccountControl({ member }: { member: { name: string; username: s
     </button>
     {open && <div id={id} className={s.panel}>
       <div className={s.identity}><strong>{member.name}</strong><span>{member.username ? `@${member.username}` : "Google 계정"}</span></div>
-      <nav aria-label="계정"><Link href="/account" onClick={() => setOpen(false)}>마이페이지</Link><Link href="/account/settings" onClick={() => setOpen(false)}>계정 설정</Link></nav>
+      <nav aria-label="계정"><Link href="/account" onClick={() => setOpen(false)}>마이페이지</Link><Link href="/account/settings" onClick={() => setOpen(false)}>계정 설정</Link>{member.isAdmin && <Link href="/admin" onClick={() => setOpen(false)}>운영진 화면</Link>}</nav>
       <form action={logoutAction}><button type="submit">로그아웃</button></form>
     </div>}
   </div>;

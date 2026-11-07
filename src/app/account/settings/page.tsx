@@ -7,6 +7,7 @@ import { GoogleForm } from "@/components/AuthForm";
 import { SectionHeader } from "@/components/SectionHeader";
 import { ButtonLink, Notice } from "@/components/ui";
 import p from "@/components/page.module.css";
+import { AdminMembers } from "./AdminMembers";
 
 export const metadata: Metadata = { title: "계정 설정", robots: { index: false, follow: false } };
 export default function SettingsPage(props: PageProps<"/account/settings">) {
@@ -24,6 +25,7 @@ async function Content({ searchParams }: PageProps<"/account/settings">) {
       <p>{member.username ? `아이디: ${member.username}` : "Google로 가입한 계정입니다."}</p>
       {linked ? <p>Google 연결됨</p> : <><p>현재 비밀번호를 확인한 뒤 연결할 Google 계정을 선택해 주세요.</p><GoogleForm link enabled={googleConfigured()} /></>}
     </section>
+    {member.isAdmin && <AdminMembers selfId={member.id} query={typeof params.q === "string" ? params.q : ""} result={typeof params.admin === "string" ? params.admin : undefined} />}
     <ButtonLink href="/account">마이페이지</ButtonLink>
   </>;
 }

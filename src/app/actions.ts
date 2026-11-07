@@ -8,6 +8,7 @@ import { checkLinks } from "@/lib/content/link-check";
 import { readWorkForm, readMemberWorkForm, valuesFromWork, validateWork, type WorkFormState } from "@/lib/content/form";
 import { createProject, createWork, deleteWork, setWorkStatus, updateMaker, updateWork } from "@/lib/content/mutations";
 import { getAnyWork } from "@/lib/content/queries";
+import { setMemberAdmin } from "@/lib/members";
 import { WORK_STATUS_LABEL, type WorkStatus } from "@/lib/content/types";
 import { clientIp, rateLimit } from "@/lib/security";
 import { saveThumbnail, UploadError } from "@/lib/uploads";
@@ -121,6 +122,18 @@ export async function updateMakerAction(fd: FormData) {
   if (!name) return;
   updateMaker(String(fd.get("slug") ?? ""), { name, bio: String(fd.get("bio") ?? "").trim().slice(0, 200), member: fd.get("member") === "on" });
   refresh();
+}
+
+// 운영진 회원만 다른 회원의 운영진 권한을 바꾼다. 공용 비밀번호 세션으로는 바꾸지 않는다.
+export async function setMemberAdminAction(fd: FormData) {
+  const member = await requireMember("/account/settings");
+  const q = String(fd.get("q") ?? "").slice(0, 60);
+  const back = (result: string) => redirect(`/account/settings?${new URLSearchParams({ q, admin: result })}#admins`);
+  if (!member.isAdmin) back("denied");
+  const target = String(fd.get("member") ?? "");
+  const grant = fd.get("grant") === "1";
+  if (target === member.id && !grant) back("self");
+  back(setMemberAdmin(target, grant) ? (grant ? "granted" : "revoked") : "missing");
 }
 
 export async function checkLinksAction() {

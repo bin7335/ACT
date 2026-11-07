@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "운영진", robots: { index: false, 
 export default function AdminLogin() {
   return (
     <div className={`container ${p.page}`} style={{ maxWidth: 480 + 32 }}>
-      <SectionHeader eyebrow="ADMIN" title="운영진 화면" description="검수와 관리는 운영진 비밀번호로 들어갑니다." />
+      <SectionHeader eyebrow="ADMIN" title="운영진 화면" description="운영진 권한이 있는 계정으로 로그인하거나 운영진 비밀번호로 들어갑니다." />
       {adminPasswordConfigured() ? (
         <LoginForm />
       ) : (

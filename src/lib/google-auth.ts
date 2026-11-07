@@ -29,10 +29,17 @@ export async function exchangeGoogleCode(url: URL, state: string, verifier: stri
   await oauth.validateApplicationLevelSignature(google, response, { signal: AbortSignal.timeout(15000) });
   const claims = oauth.getValidatedIdTokenClaims(result);
   if (!claims?.sub) throw new Error("Google identity missing");
-  return { subject: claims.sub, name: typeof claims.name === "string" ? claims.name.slice(0, 40) : "선생님" };
+  const email = claims.email_verified === true && typeof claims.email === "string" ? claims.email.trim().toLowerCase().slice(0, 254) : null;
+  return { subject: claims.sub, name: typeof claims.name === "string" ? claims.name.slice(0, 40) : "선생님", email };
 }
 
-export function resolveGoogleMember(subject: string, name: string, linkMemberId: string | null) {
+export function resolveGoogleMember(subject: string, name: string, linkMemberId: string | null, email: string | null = null) {
+  const id = findOrLinkGoogleMember(subject, name, linkMemberId);
+  if (email) db.update(schema.googleIdentity).set({ email }).where(eq(schema.googleIdentity.subject, subject)).run();
+  return id;
+}
+
+function findOrLinkGoogleMember(subject: string, name: string, linkMemberId: string | null) {
   return db.transaction(() => {
     const identity = db.select().from(schema.googleIdentity).where(eq(schema.googleIdentity.subject, subject)).get();
     if (linkMemberId) {
