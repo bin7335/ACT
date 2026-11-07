@@ -11,6 +11,7 @@ import p from "@/components/page.module.css";
 import { getPublishedWork, getRelatedWorks } from "@/lib/content/queries";
 import { LINK_LABEL, WORK_TYPE_LABEL, type WorkLink } from "@/lib/content/types";
 import { formatDate } from "@/lib/format";
+import { youtubeId } from "@/lib/remote-image";
 import { site } from "@/lib/site";
 import s from "./work.module.css";
 
@@ -24,19 +25,6 @@ export async function generateMetadata(props: PageProps<"/works/[slug]">): Promi
     alternates: { canonical: `/works/${w.slug}` },
     openGraph: { title: w.title, description: w.summary, type: "article", images: w.thumbnail ? [{ url: w.thumbnail, width: 1280, height: 800 }] : undefined },
   };
-}
-
-function youtubeId(url: string) {
-  try {
-    const u = new URL(url);
-    if (u.hostname === "youtu.be") return u.pathname.slice(1) || null;
-    if (/(^|\.)youtube\.com$/.test(u.hostname)) {
-      if (u.pathname === "/watch") return u.searchParams.get("v");
-      const m = u.pathname.match(/^\/(shorts|embed|live)\/([\w-]+)/);
-      if (m) return m[2];
-    }
-  } catch {}
-  return null;
 }
 
 export default async function WorkPage(props: PageProps<"/works/[slug]">) {

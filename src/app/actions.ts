@@ -3,6 +3,8 @@
 import { refresh } from "next/cache";
 import { currentMember, requireMember } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
+import { fillMissingThumbnail } from "@/lib/content/auto-thumbnail";
 import { checkAdminPassword, endAdminSession, isAdmin, requireAdmin, startAdminSession } from "@/lib/admin";
 import { checkLinks } from "@/lib/content/link-check";
 import { readWorkForm, readMemberWorkForm, valuesFromWork, validateWork, type WorkFormState } from "@/lib/content/form";
@@ -24,6 +26,11 @@ async function thumbnailFrom(fd: FormData): Promise<{ path?: string | null; erro
   }
 }
 
+// 이미지를 올리지 않았으면 응답을 보낸 뒤 링크의 대표 이미지를 가져온다. 방금 지운 경우는 건드리지 않는다.
+function fillThumbnailLater(slug: string) {
+  after(() => fillMissingThumbnail(slug));
+}
+
 // ── 공개 제출 ────────────────────────────────────────────────────
 
 export async function submitWorkAction(_prev: WorkFormState, fd: FormData): Promise<WorkFormState> {
@@ -41,6 +48,7 @@ export async function submitWorkAction(_prev: WorkFormState, fd: FormData): Prom
   if (thumb.error) return { values, errors: { thumbnail: thumb.error } };
 
   const slug = await createWork(v.data, { thumbnail: thumb.path ?? null, ownerId: member.id });
+  if (!thumb.path) fillThumbnailLater(slug);
   redirect(`/account/works/${slug}?new=1`);
 }
 
@@ -54,6 +62,7 @@ export async function memberEditWorkAction(slug: string, prev: WorkFormState, fd
   const thumb = await thumbnailFrom(fd);
   if (thumb.error) return { values, errors: { thumbnail: thumb.error } };
   await updateWork(slug, v.data, { thumbnail: thumb.path, ownerId: member.id });
+  if (thumb.path === undefined) fillThumbnailLater(slug);
   refresh();
   return { values, saved: true };
 }
@@ -81,6 +90,7 @@ export async function adminEditWorkAction(slug: string, _prev: WorkFormState, fd
   const thumb = await thumbnailFrom(fd);
   if (thumb.error) return { values, errors: { thumbnail: thumb.error } };
   await updateWork(slug, v.data, { thumbnail: thumb.path });
+  if (thumb.path === undefined) fillThumbnailLater(slug);
   refresh();
   return { values, saved: true };
 }

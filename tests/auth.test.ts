@@ -135,3 +135,22 @@ test("Google email is stored for admin member search", async () => {
   assert.equal(isAdmin(owner), true);
   assert.deepEqual(searchMembers("").map(m => m.id), [owner]);
 });
+
+test("link images: og:image parsing and internal address blocking", async () => {
+  const { findImageUrl, isBlockedAddress, fetchLinkImage, youtubeId } = await import("../src/lib/remote-image");
+  const base = new URL("https://teacher.example/tools/pizza/");
+  assert.equal(findImageUrl(`<meta name="twitter:image" content="/tw.png"><meta content='og.png?a=1&amp;b=2' property="og:image">`, base)?.href, "https://teacher.example/tools/pizza/og.png?a=1&b=2");
+  assert.equal(findImageUrl(`<meta property=og:image content=//cdn.example/x.jpg>`, base)?.href, "https://cdn.example/x.jpg");
+  assert.equal(findImageUrl(`<meta property="og:image" content="javascript:alert(1)">`, base), null);
+  assert.equal(findImageUrl(`<title>none</title>`, base), null);
+  for (const [address, family] of [["127.0.0.1", 4], ["10.1.2.3", 4], ["100.120.114.62", 4], ["169.254.169.254", 4], ["192.168.0.10", 4], ["::1", 6], ["::ffff:127.0.0.1", 6], ["fd00::1", 6], ["fe80::1", 6]] as const) {
+    assert.equal(isBlockedAddress(address, family), true, address);
+  }
+  assert.equal(isBlockedAddress("8.8.8.8", 4), false);
+  assert.equal(isBlockedAddress("2606:4700::1111", 6), false);
+  for (const url of ["http://127.0.0.1/", "http://localhost/", "http://[::1]/", "http://169.254.169.254/latest/meta-data", "ftp://example.com/", "http://example.com:8080/"]) {
+    await assert.rejects(fetchLinkImage(url), url);
+  }
+  assert.equal(youtubeId("https://youtu.be/abc123XYZ_-"), "abc123XYZ_-");
+  assert.equal(youtubeId("https://www.youtube.com/shorts/abc123"), "abc123");
+});

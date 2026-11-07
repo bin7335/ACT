@@ -10,6 +10,7 @@
     "db:generate": "drizzle-kit generate",
     "db:seed": "tsx scripts/seed.ts",
     "check-links": "infisical run --env=dev -- tsx --conditions=react-server scripts/check-links.ts",
+    "fill-thumbnails": "tsx --conditions=react-server scripts/fill-thumbnails.ts",
     "typecheck": "next typegen && tsc --noEmit",
     "dev:noenv": "next dev",
     "test": "tsx --conditions=react-server --test tests/*.test.ts"

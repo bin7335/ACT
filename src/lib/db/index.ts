@@ -17,7 +17,13 @@ function open() {
   sqlite.pragma("foreign_keys = ON");
   sqlite.pragma("busy_timeout = 5000");
   const db = drizzle(sqlite, { schema });
-  migrate(db, { migrationsFolder: path.resolve(/*turbopackIgnore: true*/ process.env.MIGRATIONS_DIR ?? "./drizzle") });
+  const migrationsFolder = path.resolve(/*turbopackIgnore: true*/ process.env.MIGRATIONS_DIR ?? "./drizzle");
+  try {
+    migrate(db, { migrationsFolder });
+  } catch {
+    // 빌드 때 여러 워커가 새 DB를 동시에 마이그레이션하면 한쪽이 실패한다. 다른 쪽이 끝난 뒤 다시 확인한다.
+    migrate(db, { migrationsFolder });
+  }
   return db;
 }
 
