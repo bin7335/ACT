@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "소개", description: site.descripti
 export default function AboutPage() {
   return (
     <div className={`container ${p.narrow} ${p.page}`}>
-      <SectionHeader eyebrow="ABOUT" title="이 아카이브에 대하여" />
+      <SectionHeader eyebrow="소개" title="이 아카이브에 대하여" />
       <div className={p.prose}>
         <p>
           <strong>{site.name}</strong>는 함께 연구하는 선생님들이 교실을 위해 직접 만든 수업 도구, 업무 도구, 교실 놀이를 모으는 곳입니다.

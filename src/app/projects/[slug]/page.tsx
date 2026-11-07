@@ -19,7 +19,7 @@ export default async function ProjectPage(props: PageProps<"/projects/[slug]">) 
   return (
     <div className={`container ${p.page}`}>
       <SectionHeader
-        eyebrow={`PROJECT / ${project.year} ${project.term}`}
+        eyebrow={`연구회 프로젝트 / ${project.year} ${project.term}`}
         title={project.name}
         description={
           <>

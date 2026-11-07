@@ -25,7 +25,7 @@ async function Content(props: PageProps<"/account/works/[slug]">) {
   return <>
     <Link href="/account" className={s.back}>← 내 작품</Link>
     {sp.new === "1" && <Notice tone="success">제출했어요. 계정에 저장되었으며 운영진이 확인한 뒤 공개됩니다.</Notice>}
-    <SectionHeader eyebrow="MY WORK" title={work.title} description={<StatusLabel status={work.status} />} action={work.status === "published" ? <ButtonLink href={`/works/${work.slug}`} size="sm" variant="ghost">공개 페이지 보기</ButtonLink> : undefined} />
+    <SectionHeader eyebrow="내 작품" title={work.title} description={<StatusLabel status={work.status} />} action={work.status === "published" ? <ButtonLink href={`/works/${work.slug}`} size="sm" variant="ghost">공개 페이지 보기</ButtonLink> : undefined} />
     {work.reviewNote && <Notice>운영진 메모: {work.reviewNote}</Notice>}
     <WorkForm action={memberEditWorkAction.bind(null, slug)} initial={valuesFromWork(work)} mode="edit" simple projects={projects} currentThumbnail={work.thumbnail} submitLabel="변경 내용 저장" />
   </>;

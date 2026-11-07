@@ -21,7 +21,7 @@ async function Content(props: PageProps<"/account">) {
   const works = await ownWorks();
   const count = (status: string) => works.filter(w => w.status === status).length;
   return <>
-    <SectionHeader eyebrow="MY PAGE" title={member.name} description={member.username ? `@${member.username}` : "Google 계정으로 로그인했어요."} action={<ButtonLink href="/submit" variant="primary">작품 올리기</ButtonLink>} />
+    <SectionHeader eyebrow="마이페이지" title={member.name} description={member.username ? `@${member.username}` : "Google 계정으로 로그인했어요."} action={<ButtonLink href="/submit" variant="primary">작품 올리기</ButtonLink>} />
     <AccountNav current="works" isAdmin={member.isAdmin} />
     {sp.linked && <Notice tone="success">Google 계정을 연결했어요. 이제 같은 계정으로 로그인할 수 있습니다.</Notice>}
     {sp.error && <Notice tone="danger">Google 계정을 연결하지 못했어요. 요청이 만료되었거나 이미 다른 회원에 연결된 Google 계정일 수 있습니다. 현재 계정은 변경하지 않았어요.</Notice>}

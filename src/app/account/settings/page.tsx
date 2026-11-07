@@ -22,7 +22,7 @@ async function Content({ searchParams }: PageProps<"/account/settings">) {
   const params = await searchParams;
   const google = db.select().from(schema.googleIdentity).where(eq(schema.googleIdentity.memberId, member.id)).get();
   return <>
-    <SectionHeader eyebrow="MY PAGE" title={member.name} description={member.username ? `@${member.username}` : "Google 계정으로 로그인했어요."} />
+    <SectionHeader eyebrow="마이페이지" title={member.name} description={member.username ? `@${member.username}` : "Google 계정으로 로그인했어요."} />
     <AccountNav current="settings" isAdmin={member.isAdmin} />
     {params.linked && <Notice tone="success">Google 계정을 연결했어요. 이제 같은 계정으로 로그인할 수 있습니다.</Notice>}
     {params.error && <Notice tone="danger">Google 계정을 연결하지 못했어요. 요청이 만료되었거나 이미 다른 회원에 연결된 계정일 수 있습니다. 현재 계정은 변경하지 않았어요.</Notice>}

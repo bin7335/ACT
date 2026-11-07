@@ -161,9 +161,7 @@
   text-decoration: underline;
 }
 .by {
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  font-size: 12px;
   color: var(--color-text-tertiary);
 }
 .more {

@@ -11,7 +11,7 @@ export default function Home() {
   return (
     <div className="container">
       <section className={s.hero}>
-        <p className="t-eyebrow">TEACHER-MADE ARCHIVE</p>
+        <p className="t-eyebrow">선생님이 만든 작품 아카이브</p>
         <h1 className="t-display">
           선생님이 만든 것을
           <br />
@@ -53,7 +53,7 @@ export default function Home() {
 
       <section className={s.band}>
         <div>
-          <p className="t-eyebrow">SUBMIT</p>
+          <p className="t-eyebrow">작품 올리기</p>
           <h2 className="t-h2">교실을 위해 만든 것이 있나요?</h2>
           <p className={s.bandText}>로그인하고 작품을 공유해 보세요. 올린 작품은 마이페이지에서 관리할 수 있습니다.</p>
         </div>
