@@ -8,6 +8,7 @@ import p from "@/components/page.module.css";
 import { allSubjects, getArchive, parseArchiveQuery, type ArchiveQuery } from "@/lib/content/queries";
 import { AUDIENCES, WORK_PURPOSE_LABEL, WORK_PURPOSES, WORK_TYPE_LABEL, WORK_TYPES } from "@/lib/content/types";
 import { withParams } from "@/lib/format";
+import { FilterSelects } from "./FilterSelects";
 
 export const metadata: Metadata = {
   title: "작품",
@@ -82,26 +83,14 @@ async function Archive({ searchParams }: { searchParams: PageProps<"/works">["se
             <button className={p.searchBtn}>검색</button>
           </form>
         </div>
-        <nav aria-label="형태" className={p.row}>
-          <Chip href={href({ type: undefined })} label="모든 형태" selected={!query.type} />
-          {WORK_TYPES.map((t) => (
-            <Chip key={t} href={href({ type: t })} label={WORK_TYPE_LABEL[t]} count={result.facets.type[t] ?? 0} selected={query.type === t} />
-          ))}
-        </nav>
-        <nav aria-label="대상" className={p.row}>
-          <Chip href={href({ audience: undefined })} label="모든 대상" selected={!query.audience} />
-          {AUDIENCES.map((a) => (
-            <Chip key={a} href={href({ audience: a })} label={a} count={result.facets.audience[a] ?? 0} selected={query.audience === a} />
-          ))}
-        </nav>
-        {subjects.length > 0 && (
-          <nav aria-label="교과" className={p.row}>
-            <Chip href={href({ subject: undefined })} label="모든 교과" selected={!query.subject} />
-            {subjects.map((sub) => (
-              <Chip key={sub} href={href({ subject: sub })} label={sub} count={result.facets.subject[sub] ?? 0} selected={query.subject === sub} />
-            ))}
-          </nav>
-        )}
+        <FilterSelects
+          keep={{ use: query.purpose, q: query.q, sort: current.sort }}
+          filters={[
+            { name: "type", label: "형태", all: "모든 형태", value: query.type, options: WORK_TYPES.map((t) => ({ value: t, label: WORK_TYPE_LABEL[t], count: result.facets.type[t] ?? 0 })) },
+            { name: "audience", label: "대상", all: "모든 대상", value: query.audience, options: AUDIENCES.map((a) => ({ value: a, label: a, count: result.facets.audience[a] ?? 0 })) },
+            ...(subjects.length ? [{ name: "subject", label: "교과", all: "모든 교과", value: query.subject, options: subjects.map((sub) => ({ value: sub, label: sub, count: result.facets.subject[sub] ?? 0 })) }] : []),
+          ]}
+        />
       </div>
 
       <div className={p.toolbar}>
