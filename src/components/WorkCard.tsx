@@ -36,7 +36,7 @@ export function WorkCard({ work, priority }: { work: WorkSummary; priority?: boo
         <div className={s.footerRight}>
           {work.makers.length > 0 && (
             <span className={s.maker}>
-              <span className={s.by}>만든 이</span>
+              <span className={s.by}>BY</span>
               <Link href={`/makers/${work.makers[0].slug}`}>{work.makers[0].name}</Link>
               {work.makers.length > 1 && <span className={s.more}> 외 {work.makers.length - 1}</span>}
             </span>

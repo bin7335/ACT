@@ -18,7 +18,7 @@ const TABS: (WorkStatus | "all")[] = ["review", "published", "hidden", "all"];
 export default function AdminPage(props: PageProps<"/admin">) {
   return (
     <div className={`container ${p.page}`}>
-      <Suspense fallback={<SectionHeader eyebrow="운영진" title="검수와 관리" />}>
+      <Suspense fallback={<SectionHeader eyebrow="ADMIN" title="검수와 관리" />}>
         <Dashboard searchParams={props.searchParams} />
       </Suspense>
     </div>
@@ -34,7 +34,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/admin">["
   return (
     <>
       <SectionHeader
-        eyebrow={`운영진 / 검수 대기 ${counts.review}`}
+        eyebrow={`ADMIN / 검수 대기 ${counts.review}`}
         title="검수와 관리"
         action={
           <>

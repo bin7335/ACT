@@ -29,7 +29,7 @@ export default function WorksPage(props: PageProps<"/works">) {
 function ArchiveFallback() {
   return (
     <>
-      <SectionHeader eyebrow="작품 아카이브" title="선생님들이 만든 작품" action={<ButtonLink href="/submit" variant="primary">작품 올리기</ButtonLink>} />
+      <SectionHeader eyebrow="WORK ARCHIVE" title="선생님들이 만든 작품" action={<ButtonLink href="/submit" variant="primary">작품 올리기</ButtonLink>} />
       <WorkGridSkeleton />
     </>
   );
@@ -53,7 +53,7 @@ async function Archive({ searchParams }: { searchParams: PageProps<"/works">["se
   return (
     <>
       <SectionHeader
-        eyebrow={`작품 아카이브 / ${result.facets.all}개`}
+        eyebrow={`WORK ARCHIVE / ${result.facets.all}`}
         title="선생님들이 만든 작품"
         action={
           <ButtonLink href="/submit" variant="primary">

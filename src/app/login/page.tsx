@@ -12,7 +12,7 @@ import p from "@/components/page.module.css";
 export const metadata: Metadata = { title: "로그인", robots: { index: false, follow: false }, referrer: "no-referrer" };
 
 export default function LoginPage(props: PageProps<"/login">) {
-  return <div className={`container ${p.narrow} ${p.page}`}><SectionHeader eyebrow="계정" title="로그인" description="로그인하고 작품을 올리거나 내 작품을 관리하세요." /><Suspense fallback={<p>불러오는 중…</p>}><Content {...props} /></Suspense></div>;
+  return <div className={`container ${p.narrow} ${p.page}`}><SectionHeader eyebrow="ACCOUNT" title="로그인" description="로그인하고 작품을 올리거나 내 작품을 관리하세요." /><Suspense fallback={<p>불러오는 중…</p>}><Content {...props} /></Suspense></div>;
 }
 
 async function Content(props: PageProps<"/login">) {

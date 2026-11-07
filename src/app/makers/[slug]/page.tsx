@@ -18,7 +18,7 @@ export default async function MakerPage(props: PageProps<"/makers/[slug]">) {
   return (
     <div className={`container ${p.page}`}>
       <SectionHeader
-        eyebrow={`제작자 / 작품 ${works.length}개${maker.member ? " / 연구회" : ""}`}
+        eyebrow={`MAKER / ${works.length} WORKS${maker.member ? " / 연구회" : ""}`}
         title={maker.name}
         description={
           <>
