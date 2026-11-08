@@ -1,6 +1,6 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refresh, revalidatePath } from "next/cache";
 import { currentMember, requireMember } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
@@ -103,8 +103,16 @@ export async function setStatusAction(fd: FormData) {
   const status = String(fd.get("status") ?? "") as WorkStatus;
   if (!STATUSES.includes(status) || !(await getAnyWork(slug))) return;
   setWorkStatus(slug, status, String(fd.get("note") ?? ""));
+  // 공개 목록·홈·상세가 다음 방문에서 곧바로 새 상태를 보도록 캐시를 비운다.
+  revalidatePath("/");
+  revalidatePath("/works");
+  revalidatePath(`/works/${slug}`);
+  revalidatePath("/admin");
   const back = String(fd.get("back") ?? "");
-  redirect(back.startsWith("/admin") ? back : "/admin");
+  if (!back.startsWith("/admin")) redirect("/admin");
+  const url = new URL(back, "http://admin.local");
+  url.searchParams.set("saved", status);
+  redirect(`${url.pathname}${url.search}`);
 }
 
 export async function deleteWorkAction(fd: FormData) {

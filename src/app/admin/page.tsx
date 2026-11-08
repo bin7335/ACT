@@ -6,6 +6,7 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { Button, Notice, StatusLabel, TypeBadge } from "@/components/ui";
 import p from "@/components/page.module.css";
 import { requireAdmin } from "@/lib/admin";
+import { currentMember } from "@/lib/auth";
 import { countByStatus, listWorksByStatus } from "@/lib/content/queries";
 import { WORK_STATUS_LABEL, type WorkStatus } from "@/lib/content/types";
 import { formatDate } from "@/lib/format";
@@ -29,7 +30,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/admin">["
   await requireAdmin();
   const sp = await searchParams;
   const tab = (TABS as string[]).includes(String(sp.status)) ? (sp.status as WorkStatus | "all") : "review";
-  const [counts, works] = await Promise.all([countByStatus(), listWorksByStatus(tab)]);
+  const [counts, works, member] = await Promise.all([countByStatus(), listWorksByStatus(tab), currentMember()]);
 
   return (
     <>
@@ -41,6 +42,11 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/admin">["
             <Link href="/admin/projects" className={s.headLink}>
               프로젝트·제작자
             </Link>
+            {member?.isAdmin && (
+              <Link href="/account/settings#admins" className={s.headLink}>
+                회원 관리
+              </Link>
+            )}
             <form action={checkLinksAction}>
               <Button type="submit" size="sm">
                 링크 점검 실행

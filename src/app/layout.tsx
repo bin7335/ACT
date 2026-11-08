@@ -2,14 +2,19 @@ import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans_KR } from "next/font/google";
 import Link from "next/link";
 import { Suspense } from "react";
-import { TopNav, TopNavView } from "@/components/TopNav";
+import { AdminTab, TopNav, TopNavView } from "@/components/TopNav";
 import { site } from "@/lib/site";
 import { currentMember } from "@/lib/auth";
+import { isAdmin } from "@/lib/admin";
 import { AccountControl } from "@/components/AccountControl";
 
 async function HeaderAccount() {
   const member = await currentMember();
   return <AccountControl member={member ? { name: member.name, username: member.username, isAdmin: member.isAdmin } : null} />;
+}
+
+async function HeaderAdminTab() {
+  return <AdminTab isAdmin={await isAdmin()} />;
 }
 import "./globals.css";
 import s from "./layout.module.css";
@@ -48,7 +53,11 @@ export default function RootLayout({ children, auth }: LayoutProps<"/">) {
     <html lang="ko" className={`${sans.variable} ${mono.variable}`}>
       <body className={s.body}>
         <Suspense fallback={<TopNavView siteName={site.name} pathname="" />}>
-          <TopNav siteName={site.name} account={<Suspense fallback={<span aria-label="계정 확인 중" style={{ width: 56 }} />}><HeaderAccount /></Suspense>} />
+          <TopNav
+            siteName={site.name}
+            admin={<Suspense fallback={null}><HeaderAdminTab /></Suspense>}
+            account={<Suspense fallback={<span aria-label="계정 확인 중" style={{ width: 56 }} />}><HeaderAccount /></Suspense>}
+          />
         </Suspense>
         <main id="main" className={s.main}>
           {children}

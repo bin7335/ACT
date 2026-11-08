@@ -14,12 +14,26 @@ const MENU = [
   { href: "/about", label: "소개" },
 ];
 
-export function TopNav({ siteName, account }: { siteName: string; account?: ReactNode }) {
-  return <TopNavView siteName={siteName} pathname={usePathname()} account={account} />;
+export function TopNav({ siteName, account, admin }: { siteName: string; account?: ReactNode; admin?: ReactNode }) {
+  return <TopNavView siteName={siteName} pathname={usePathname()} account={account} admin={admin} />;
+}
+
+/** 운영진에게만 보이는 상단 탭. 서버에서 권한을 확인해 isAdmin으로 넘긴다. */
+export function AdminTab({ isAdmin }: { isAdmin: boolean }) {
+  const pathname = usePathname();
+  if (!isAdmin) return null;
+  const on = pathname === "/admin" || pathname.startsWith("/admin/");
+  return (
+    <li>
+      <Link href="/admin" aria-current={on ? "page" : undefined}>
+        관리자페이지
+      </Link>
+    </li>
+  );
 }
 
 /** usePathname 없이 그리는 정적 셸(프리렌더용 Suspense fallback) */
-export function TopNavView({ siteName, pathname, account }: { siteName: string; pathname: string; account?: ReactNode }) {
+export function TopNavView({ siteName, pathname, account, admin }: { siteName: string; pathname: string; account?: ReactNode; admin?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const favCount = useFavorites().length;
 
@@ -58,6 +72,7 @@ export function TopNavView({ siteName, pathname, account }: { siteName: string; 
                 </Link>
               </li>
             ))}
+            {admin}
           </ul>
         </nav>
 
