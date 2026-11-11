@@ -7,6 +7,8 @@ import { Button, Notice, StatusLabel, TypeBadge } from "@/components/ui";
 import p from "@/components/page.module.css";
 import { requireAdmin } from "@/lib/admin";
 import { currentMember } from "@/lib/auth";
+import { listMembers, searchMembers } from "@/lib/members";
+import { MemberAdminList } from "@/app/account/settings/MemberAdminList";
 import { countByStatus, listWorksByStatus } from "@/lib/content/queries";
 import { WORK_STATUS_LABEL, type WorkStatus } from "@/lib/content/types";
 import { formatDate } from "@/lib/format";
@@ -19,7 +21,7 @@ const TABS: (WorkStatus | "all")[] = ["review", "published", "hidden", "all"];
 export default function AdminPage(props: PageProps<"/admin">) {
   return (
     <div className={`container ${p.page}`}>
-      <Suspense fallback={<SectionHeader eyebrow="ADMIN" title="검수와 관리" />}>
+      <Suspense fallback={<SectionHeader title="검수와 관리" />}>
         <Dashboard searchParams={props.searchParams} />
       </Suspense>
     </div>
@@ -29,24 +31,24 @@ export default function AdminPage(props: PageProps<"/admin">) {
 async function Dashboard({ searchParams }: { searchParams: PageProps<"/admin">["searchParams"] }) {
   await requireAdmin();
   const sp = await searchParams;
+  const membersView = sp.view === "members";
+  const memberQuery = typeof sp.q === "string" ? sp.q : "";
+  const requestedPage = Number(sp.page);
   const tab = (TABS as string[]).includes(String(sp.status)) ? (sp.status as WorkStatus | "all") : "review";
   const [counts, works, member] = await Promise.all([countByStatus(), listWorksByStatus(tab), currentMember()]);
+  const memberList = membersView && member?.isAdmin
+    ? (memberQuery ? { items: searchMembers(memberQuery, "all"), total: 0, page: 1, pageCount: 1 } : listMembers(Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1))
+    : null;
 
   return (
     <>
       <SectionHeader
-        eyebrow={`ADMIN / 검수 대기 ${counts.review}`}
-        title="검수와 관리"
+        title={membersView ? "회원 권한 설정" : "검수와 관리"}
         action={
           <>
             <Link href="/admin/projects" className={s.headLink}>
               프로젝트·제작자
             </Link>
-            {member?.isAdmin && (
-              <Link href="/account/settings#admins" className={s.headLink}>
-                회원 관리
-              </Link>
-            )}
             <form action={checkLinksAction}>
               <Button type="submit" size="sm">
                 링크 점검 실행
@@ -60,6 +62,14 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/admin">["
           </>
         }
       />
+      <nav aria-label="관리자 메뉴" className={p.row}>
+        <Link href="/admin" className={s.tab} aria-current={!membersView ? "page" : undefined}>작품 검수</Link>
+        <Link href="/admin?view=members" className={s.tab} aria-current={membersView ? "page" : undefined}>회원 권한 설정</Link>
+      </nav>
+      {membersView ? (
+        member?.isAdmin && memberList ? <MemberAdminList items={memberList.items} selfId={member.id} page={memberList.page} total={memberList.total} pageCount={memberList.pageCount} query={memberQuery} result={typeof sp.admin === "string" ? sp.admin : undefined} />
+          : <Notice>회원 권한은 운영진 회원 계정으로 로그인해야 바꿀 수 있어요. <Link href="/login?next=%2Fadmin%3Fview%3Dmembers">회원 계정으로 로그인</Link></Notice>
+      ) : <>
       {sp.checked === "1" && <Notice tone="success">공개 작품의 링크 점검을 마쳤어요. 끊긴 링크는 목록에 표시됩니다.</Notice>}
       {sp.deleted === "1" && <Notice tone="success">작품을 삭제했어요.</Notice>}
 
@@ -84,6 +94,8 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/admin">["
                 <th>작품</th>
                 <th>만든 사람</th>
                 <th>상태</th>
+                <th>조회</th>
+                <th>좋아요</th>
                 <th>수정일</th>
                 <th>
                   <span className="visually-hidden">동작</span>
@@ -107,6 +119,8 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/admin">["
                   <td>
                     <StatusLabel status={w.status} />
                   </td>
+                  <td className="t-mono">{w.viewCount.toLocaleString("ko-KR")}</td>
+                  <td className="t-mono">{w.likeCount.toLocaleString("ko-KR")}</td>
                   <td className="t-mono">{formatDate(w.updatedAt)}</td>
                   <td>
                     <Link href={`/admin/works/${w.slug}`} className={s.headLink}>
@@ -119,6 +133,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/admin">["
           </table>
         </div>
       )}
+      </>}
     </>
   );
 }

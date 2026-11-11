@@ -3,12 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { LikeButton } from "@/components/LikeButton";
 import { Prose } from "@/components/Prose";
 import { Thumbnail } from "@/components/Thumbnail";
 import { ExternalButton, Notice, TypeBadge } from "@/components/ui";
 import { WorkGrid } from "@/components/WorkCard";
 import p from "@/components/page.module.css";
 import { getPublishedWork, getRelatedWorks } from "@/lib/content/queries";
+import { likeState, reactionProps, recordView } from "@/lib/content/stats";
 import { LINK_LABEL, WORK_PURPOSE_LABEL, WORK_TYPE_LABEL, type WorkLink } from "@/lib/content/types";
 import { formatDate } from "@/lib/format";
 import { youtubeId } from "@/lib/remote-image";
@@ -31,6 +33,8 @@ export default async function WorkPage(props: PageProps<"/works/[slug]">) {
   const { slug } = await props.params;
   const work = await getPublishedWork(slug);
   if (!work) notFound();
+  await recordView(work.slug);
+  const likes = await likeState(work.slug);
   const related = await getRelatedWorks(work);
   const yt = work.links.map((l) => (l.kind === "youtube" ? youtubeId(l.url) : null)).find(Boolean);
   const [primary, ...rest] = work.links;
@@ -84,7 +88,10 @@ export default async function WorkPage(props: PageProps<"/works/[slug]">) {
               </ExternalButton>
             ))}
             <div className={s.secondary}>
-              <FavoriteButton slug={work.slug} title={work.title} withLabel />
+              <div className={s.reactions}>
+                <FavoriteButton slug={work.slug} title={work.title} withLabel />
+                <LikeButton slug={work.slug} liked={likes.liked} count={likes.count} />
+              </div>
               <CopyLinkButton url={`${site.url}/works/${work.slug}`} />
             </div>
           </div>
@@ -159,7 +166,7 @@ export default async function WorkPage(props: PageProps<"/works/[slug]">) {
             </h2>
             <Link href={`/works?use=${work.purpose}`}>{WORK_PURPOSE_LABEL[work.purpose]} 더 보기 →</Link>
           </div>
-          <WorkGrid works={related} />
+          <WorkGrid works={related} reactions={await reactionProps(related.map((w) => w.slug))} />
         </section>
       )}
     </div>

@@ -57,8 +57,8 @@ export const work = sqliteTable(
   "work",
   {
     slug: text("slug").primaryKey(),
-    purpose: text("purpose", { enum: ["class", "work", "play"] }).notNull().default("class"),
-    type: text("type", { enum: ["web-app", "mobile-app", "video", "material"] }).notNull(),
+    purpose: text("purpose", { enum: ["class", "work", "play", "other"] }).notNull().default("class"),
+    type: text("type", { enum: ["web-app", "mobile-app", "video", "material", "other"] }).notNull(),
     title: text("title").notNull(),
     summary: text("summary").notNull(),
     body: text("body").notNull().default(""),
@@ -81,8 +81,52 @@ export const work = sqliteTable(
     publishedAt: ts("published_at"),
     linkCheckedAt: ts("link_checked_at"),
     linkBroken: integer("link_broken", { mode: "boolean" }).notNull().default(false),
+    /** 공개 페이지 조회수. 링크 미리 불러오기는 세지 않는다. */
+    viewCount: integer("view_count").notNull().default(0),
   },
   (t) => [index("work_status_idx").on(t.status, t.publishedAt), index("work_edit_token_idx").on(t.editTokenHash)],
+);
+
+/** 좋아요 — 로그인 없이 쓸 수 있게 브라우저별 방문자 ID로 한 번만 센다. */
+export const workLike = sqliteTable(
+  "work_like",
+  {
+    workSlug: text("work_slug")
+      .notNull()
+      .references(() => work.slug, { onDelete: "cascade", onUpdate: "cascade" }),
+    clientId: text("client_id").notNull(),
+    createdAt: ts("created_at").notNull().default(now),
+  },
+  (t) => [primaryKey({ columns: [t.workSlug, t.clientId] })],
+);
+
+/** 회원별 API 토큰 — 원문은 저장하지 않고 SHA-256 해시만 둔다. */
+export const apiToken = sqliteTable(
+  "api_token",
+  {
+    id: text("id").primaryKey(),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => member.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    createdAt: ts("created_at").notNull().default(now),
+    lastUsedAt: ts("last_used_at"),
+  },
+  (t) => [index("api_token_member_idx").on(t.memberId)],
+);
+
+/** 북마크(즐겨찾기) 집계 — 화면은 브라우저 저장소를 쓰고, 숫자만 서버에 모은다. */
+export const workBookmark = sqliteTable(
+  "work_bookmark",
+  {
+    workSlug: text("work_slug")
+      .notNull()
+      .references(() => work.slug, { onDelete: "cascade", onUpdate: "cascade" }),
+    clientId: text("client_id").notNull(),
+    createdAt: ts("created_at").notNull().default(now),
+  },
+  (t) => [primaryKey({ columns: [t.workSlug, t.clientId] })],
 );
 
 export const workMaker = sqliteTable(

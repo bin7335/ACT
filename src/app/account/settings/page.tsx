@@ -11,7 +11,9 @@ import p from "@/components/page.module.css";
 import { AccountNav } from "../AccountNav";
 import s from "../account.module.css";
 import { AdminMembers } from "./AdminMembers";
+import { ApiTokens } from "./ApiTokens";
 import { NameForm } from "./NameForm";
+import { listApiTokens } from "@/lib/api-tokens";
 
 export const metadata: Metadata = { title: "계정 설정", robots: { index: false, follow: false } };
 export default function SettingsPage(props: PageProps<"/account/settings">) {
@@ -22,7 +24,7 @@ async function Content({ searchParams }: PageProps<"/account/settings">) {
   const params = await searchParams;
   const google = db.select().from(schema.googleIdentity).where(eq(schema.googleIdentity.memberId, member.id)).get();
   return <>
-    <SectionHeader eyebrow="MY PAGE" title={member.name} description={member.username ? `@${member.username}` : "Google 계정으로 로그인했어요."} />
+    <SectionHeader title={member.name} description={member.username ? `@${member.username}` : "Google 계정으로 로그인했어요."} />
     <AccountNav current="settings" isAdmin={member.isAdmin} />
     {params.linked && <Notice tone="success">Google 계정을 연결했어요. 이제 같은 계정으로 로그인할 수 있습니다.</Notice>}
     {params.error && <Notice tone="danger">Google 계정을 연결하지 못했어요. 요청이 만료되었거나 이미 다른 회원에 연결된 계정일 수 있습니다. 현재 계정은 변경하지 않았어요.</Notice>}
@@ -47,6 +49,7 @@ async function Content({ searchParams }: PageProps<"/account/settings">) {
           </>}
         </div>
       </section>
+      <ApiTokens tokens={listApiTokens(member.id)} />
       {member.isAdmin && <AdminMembers selfId={member.id} query={typeof params.q === "string" ? params.q : ""} result={typeof params.admin === "string" ? params.admin : undefined} />}
       <section className={s.setting} aria-labelledby="session-heading">
         <div className={s.settingHead}><h2 id="session-heading">로그아웃</h2><p>공용 컴퓨터라면 사용 후 꼭 로그아웃해 주세요.</p></div>

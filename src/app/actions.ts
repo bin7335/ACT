@@ -8,8 +8,11 @@ import { fillMissingThumbnail } from "@/lib/content/auto-thumbnail";
 import { checkAdminPassword, endAdminSession, isAdmin, requireAdmin, startAdminSession } from "@/lib/admin";
 import { checkLinks } from "@/lib/content/link-check";
 import { readWorkForm, readMemberWorkForm, valuesFromWork, validateWork, type WorkFormState } from "@/lib/content/form";
-import { createProject, createWork, deleteWork, setWorkStatus, updateMaker, updateWork } from "@/lib/content/mutations";
+import { createProject, deleteWork, setWorkStatus, updateMaker, updateWork } from "@/lib/content/mutations";
+import { createMemberWork } from "@/lib/content/submission";
 import { getAnyWork } from "@/lib/content/queries";
+import { bookmarkCount, likeCount, setBookmarkRow, toggleLikeRow, visitorId } from "@/lib/content/stats";
+import { createApiToken, listApiTokens, revokeApiToken } from "@/lib/api-tokens";
 import { setMemberAdmin } from "@/lib/members";
 import { WORK_STATUS_LABEL, type WorkStatus } from "@/lib/content/types";
 import { clientIp, rateLimit } from "@/lib/security";
@@ -47,7 +50,10 @@ export async function submitWorkAction(_prev: WorkFormState, fd: FormData): Prom
   const thumb = await thumbnailFrom(fd);
   if (thumb.error) return { values, errors: { thumbnail: thumb.error } };
 
-  const slug = await createWork(v.data, { thumbnail: thumb.path ?? null, ownerId: member.id });
+  const slug = await createMemberWork(v.data, { thumbnail: thumb.path ?? null, ownerId: member.id });
+  revalidatePath("/");
+  revalidatePath("/works");
+  revalidatePath("/admin");
   if (!thumb.path) fillThumbnailLater(slug);
   redirect(`/account/works/${slug}?new=1`);
 }
@@ -144,14 +150,61 @@ export async function updateMakerAction(fd: FormData) {
 
 // 운영진 회원만 다른 회원의 운영진 권한을 바꾼다. 공용 비밀번호 세션으로는 바꾸지 않는다.
 export async function setMemberAdminAction(fd: FormData) {
-  const member = await requireMember("/account/settings");
+  const inAdmin = fd.get("context") === "admin";
+  const member = await requireMember(inAdmin ? "/admin?view=members" : "/account/settings");
   const q = String(fd.get("q") ?? "").slice(0, 60);
-  const back = (result: string) => redirect(`/account/settings?${new URLSearchParams({ q, admin: result })}#admins`);
+  const back = (result: string) => {
+    const params = new URLSearchParams({ q, admin: result });
+    if (inAdmin) {
+      params.set("view", "members");
+      const page = Number(fd.get("page"));
+      if (Number.isFinite(page) && page > 1) params.set("page", String(Math.floor(page)));
+    }
+    redirect(`${inAdmin ? "/admin" : "/account/settings"}?${params}#admins`);
+  };
   if (!member.isAdmin) back("denied");
   const target = String(fd.get("member") ?? "");
   const grant = fd.get("grant") === "1";
   if (target === member.id && !grant) back("self");
-  back(setMemberAdmin(target, grant) ? (grant ? "granted" : "revoked") : "missing");
+  const changed = setMemberAdmin(target, grant);
+  if (changed) revalidatePath("/", "layout");
+  back(changed ? (grant ? "granted" : "revoked") : "missing");
+}
+
+// 작품 좋아요 — 로그인 없이 브라우저 단위로 한 번만 센다.
+// 화면 전체를 다시 그리지 않도록 새 상태만 돌려준다(다시 그리면 조회수가 한 번 더 오른다).
+export async function toggleLikeAction(slug: string): Promise<{ liked: boolean; count: number } | null> {
+  if (!slug) return null;
+  try {
+    const liked = toggleLikeRow(slug, await visitorId());
+    return { liked, count: likeCount(slug) };
+  } catch {
+    return null;
+  }
+}
+
+export async function setBookmarkAction(slug: string, on: boolean): Promise<{ bookmarked: boolean; count: number } | null> {
+  if (!slug) return null;
+  try {
+    const bookmarked = setBookmarkRow(slug, await visitorId(), on);
+    return { bookmarked, count: bookmarkCount(slug) };
+  } catch {
+    return null;
+  }
+}
+
+// ── API 토큰 ─────────────────────────────────────────────────────
+
+export async function createApiTokenAction(_prev: { token?: string; error?: string }, fd: FormData): Promise<{ token?: string; error?: string }> {
+  const member = await requireMember("/account/settings");
+  if (listApiTokens(member.id).length >= 5) return { error: "토큰은 회원당 5개까지 만들 수 있어요. 쓰지 않는 토큰을 폐기해 주세요." };
+  return { token: createApiToken(member.id, String(fd.get("name") ?? "")).token };
+}
+
+export async function revokeApiTokenAction(fd: FormData) {
+  const member = await requireMember("/account/settings");
+  revokeApiToken(member.id, String(fd.get("id") ?? ""));
+  refresh();
 }
 
 export async function checkLinksAction() {

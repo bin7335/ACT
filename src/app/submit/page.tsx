@@ -19,8 +19,8 @@ async function Form() {
   const member = await requireMember("/submit");
   const projects = await listProjectOptions();
   return <>
-    <SectionHeader eyebrow="SUBMIT" title="작품 올리기" description="제출한 작품은 마이페이지에서 관리하며, 운영진이 확인한 뒤 공개됩니다." />
+    <SectionHeader title="작품 올리기" description={member.isAdmin ? "운영진 계정으로 올리는 작품은 검수 없이 바로 공개됩니다." : "제출한 작품은 마이페이지에서 관리하며, 운영진이 확인한 뒤 공개됩니다."} />
     <Notice>{member.name}님의 계정에 저장됩니다. 마이페이지에서 수정할 수 있어요.</Notice>
-    <WorkForm action={submitWorkAction} initial={emptyValues} mode="create" simple projects={projects} submitLabel="검수 요청하기" />
+    <WorkForm action={submitWorkAction} initial={emptyValues} mode="create" simple projects={projects} submitLabel={member.isAdmin ? "바로 공개하기" : "검수 요청하기"} />
   </>;
 }

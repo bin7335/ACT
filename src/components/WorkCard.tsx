@@ -1,20 +1,17 @@
 import Link from "next/link";
 import { LINK_LABEL, type WorkSummary } from "@/lib/content/types";
 import { formatMonth } from "@/lib/format";
-import { FavoriteButton } from "./FavoriteButton";
+import { CardActions } from "./CardActions";
 import { Thumbnail } from "./Thumbnail";
 import { ExternalButton, TypeBadge } from "./ui";
 import s from "./WorkCard.module.css";
 
-export function WorkCard({ work, priority }: { work: WorkSummary; priority?: boolean }) {
+export function WorkCard({ work, priority, liked, bookmarked }: { work: WorkSummary; priority?: boolean; liked?: boolean; bookmarked?: boolean }) {
   const meta = [work.audience.join("·"), work.subjects.join("·"), work.publishedAt && formatMonth(work.publishedAt)].filter(Boolean).join(" · ");
   return (
     <article className={s.card}>
       <Link href={`/works/${work.slug}`} className={s.thumb}>
         <Thumbnail src={work.thumbnail} alt={work.thumbnailAlt} title={work.title} purpose={work.purpose} priority={priority} />
-        <span className={s.badge}>
-          <TypeBadge purpose={work.purpose} type={work.type} />
-        </span>
       </Link>
       <div className={s.body}>
         <h3 className={s.title}>
@@ -23,6 +20,18 @@ export function WorkCard({ work, priority }: { work: WorkSummary; priority?: boo
         <p className={s.summary}>{work.summary}</p>
       </div>
       <p className={s.meta}>{meta}</p>
+      <div className={s.reactionsRow}>
+        <CardActions
+          slug={work.slug}
+          title={work.title}
+          likeCount={work.likeCount}
+          viewCount={work.viewCount}
+          bookmarkCount={work.bookmarkCount}
+          liked={liked}
+          bookmarked={bookmarked}
+        />
+        <TypeBadge purpose={work.purpose} type={work.type} />
+      </div>
       <div className={s.footer}>
         {work.primaryLink ? (
           <ExternalButton href={work.primaryLink.url} size="sm" aria-label={`${work.title} ${LINK_LABEL[work.primaryLink.kind]}`}>
@@ -41,19 +50,20 @@ export function WorkCard({ work, priority }: { work: WorkSummary; priority?: boo
               {work.makers.length > 1 && <span className={s.more}> 외 {work.makers.length - 1}</span>}
             </span>
           )}
-          <FavoriteButton slug={work.slug} title={work.title} />
         </div>
       </div>
     </article>
   );
 }
 
-export function WorkGrid({ works, priorityCount = 0 }: { works: WorkSummary[]; priorityCount?: number }) {
+export function WorkGrid({ works, priorityCount = 0, reactions }: { works: WorkSummary[]; priorityCount?: number; reactions?: { liked: string[]; bookmarked: string[] } }) {
+  const liked = new Set(reactions?.liked);
+  const bookmarked = new Set(reactions?.bookmarked);
   return (
     <ul className={s.grid}>
       {works.map((w, i) => (
         <li key={w.slug}>
-          <WorkCard work={w} priority={i < priorityCount} />
+          <WorkCard work={w} priority={i < priorityCount} liked={liked.has(w.slug)} bookmarked={bookmarked.has(w.slug)} />
         </li>
       ))}
     </ul>

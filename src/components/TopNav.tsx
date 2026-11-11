@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { useFavorites } from "./favorites";
+import { onFirstFavorite, useFavorites } from "./favorites";
 import { buttonClass } from "./ui";
 import s from "./TopNav.module.css";
 
@@ -36,13 +36,22 @@ export function AdminTab({ isAdmin }: { isAdmin: boolean }) {
 export function TopNavView({ siteName, pathname, account, admin }: { siteName: string; pathname: string; account?: ReactNode; admin?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const favCount = useFavorites().length;
+  const [hint, setHint] = useState(false);
 
   // 페이지가 바뀌면 모바일 메뉴를 닫는다(렌더 중 이전 값과 비교).
   const [lastPath, setLastPath] = useState(pathname);
   if (pathname !== lastPath) {
     setLastPath(pathname);
     setOpen(false);
+    setHint(false);
   }
+  // 처음 즐겨찾기에 담으면 어디서 모아 보는지 잠깐 알려 준다.
+  useEffect(() => onFirstFavorite(() => setHint(true)), []);
+  useEffect(() => {
+    if (!hint) return;
+    const timer = window.setTimeout(() => setHint(false), 8000);
+    return () => window.clearTimeout(timer);
+  }, [hint]);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
@@ -77,13 +86,29 @@ export function TopNavView({ siteName, pathname, account, admin }: { siteName: s
         </nav>
 
         <div className={s.actions}>
-          <Link href="/favorites" className={s.fav} aria-current={active("/favorites") ? "page" : undefined}>
-            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
-              <path d="M4 2h8v12l-4-3-4 3z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-            </svg>
-            <span className={s.favLabel}>즐겨찾기</span>
-            {favCount > 0 && <span className={s.count}>{favCount}</span>}
-          </Link>
+          <div className={s.favWrap}>
+            <Link href="/favorites" className={s.fav} data-hint={hint || undefined} aria-current={active("/favorites") ? "page" : undefined}>
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+                <path d="M4 2h8v12l-4-3-4 3z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+              </svg>
+              <span className={s.favLabel}>즐겨찾기</span>
+              {favCount > 0 && <span className={s.count}>{favCount}</span>}
+            </Link>
+            <div role="status">
+              {hint && (
+                <div className={s.hint}>
+                  <p>
+                    <strong>즐겨찾기에 담았어요.</strong> 담은 작품은 이 버튼에서 모아 볼 수 있어요. 이 브라우저에만 저장됩니다.
+                  </p>
+                  <button type="button" className={s.hintClose} aria-label="안내 닫기" onClick={() => setHint(false)}>
+                    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden>
+                      <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.5" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
           <Link href="/submit" className={`${buttonClass("primary", "sm")} ${s.submit}`}>
             작품 올리기
           </Link>

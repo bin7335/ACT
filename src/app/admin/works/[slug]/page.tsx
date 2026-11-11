@@ -39,7 +39,7 @@ export default async function AdminWorkPage(props: PageProps<"/admin/works/[slug
       <Link href="/admin" className={s.headLink}>
         ← 목록으로
       </Link>
-      <SectionHeader eyebrow={`REVIEW / ${work.slug}`} title={work.title} description={work.summary} />
+      <SectionHeader title={work.title} description={work.summary} />
       {saved && <Notice tone="success">{saved}</Notice>}
 
       <div className={s.reviewGrid}>

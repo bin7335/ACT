@@ -1,19 +1,32 @@
 import "server-only";
-import { asc, eq, or, sql } from "drizzle-orm";
+import { asc, desc, eq, or, sql } from "drizzle-orm";
 import { db, schema } from "./db";
 
 export type MemberRow = { id: string; name: string; username: string | null; email: string | null; isAdmin: boolean };
 
 const columns = { id: schema.member.id, name: schema.member.name, username: schema.member.username, email: schema.googleIdentity.email, isAdmin: schema.member.isAdmin };
 
-// 이름·아이디·Google 이메일 일부로 회원을 찾는다. 검색어가 없으면 현재 운영진을 보여 준다.
-export function searchMembers(query: string): MemberRow[] {
+// 계정 설정은 현재 운영진, 관리자 화면은 최근 가입 회원 30명을 기본으로 보여 준다.
+export function searchMembers(query: string, scope: "admins" | "all" = "admins"): MemberRow[] {
   const q = query.trim().toLowerCase().slice(0, 60);
   const base = db.select(columns).from(schema.member).leftJoin(schema.googleIdentity, eq(schema.googleIdentity.memberId, schema.member.id));
-  if (!q) return base.where(eq(schema.member.isAdmin, true)).orderBy(asc(schema.member.name)).all();
+  if (!q) return scope === "all"
+    ? base.orderBy(desc(schema.member.createdAt), asc(schema.member.id)).limit(30).all()
+    : base.where(eq(schema.member.isAdmin, true)).orderBy(asc(schema.member.name)).all();
   const pattern = `%${q.replace(/[!%_]/g, c => `!${c}`)}%`;
   const match = (col: typeof schema.member.name | typeof schema.member.username | typeof schema.googleIdentity.email) => sql`lower(${col}) like ${pattern} escape '!'`;
   return base.where(or(match(schema.member.name), match(schema.member.username), match(schema.googleIdentity.email))).orderBy(asc(schema.member.name)).limit(30).all();
+}
+
+/** 관리자 화면용: 가입자 전체를 10명씩 보여 준다(최근 가입 먼저). */
+export function listMembers(page: number, perPage = 10) {
+  const total = db.select({ n: sql<number>`count(*)` }).from(schema.member).get()?.n ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / perPage));
+  const current = Math.min(Math.max(1, Math.floor(page) || 1), pageCount);
+  const items = db.select(columns).from(schema.member).leftJoin(schema.googleIdentity, eq(schema.googleIdentity.memberId, schema.member.id))
+    .orderBy(desc(schema.member.createdAt), asc(schema.member.id))
+    .limit(perPage).offset((current - 1) * perPage).all();
+  return { items, total, page: current, pageCount };
 }
 
 export function setMemberAdmin(id: string, isAdmin: boolean) {

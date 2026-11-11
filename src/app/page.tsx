@@ -4,6 +4,7 @@ import { ButtonLink } from "@/components/ui";
 import { WorkGrid, WorkGridSkeleton } from "@/components/WorkCard";
 import p from "@/components/page.module.css";
 import { getArchive, getLatestWorks, getStats, listProjects } from "@/lib/content/queries";
+import { reactionProps } from "@/lib/content/stats";
 import { WORK_PURPOSE_HINT, WORK_PURPOSE_LABEL, WORK_PURPOSES } from "@/lib/content/types";
 import s from "./home.module.css";
 
@@ -11,14 +12,13 @@ export default function Home() {
   return (
     <div className="container">
       <section className={s.hero}>
-        <p className="t-eyebrow">TEACHER-MADE ARCHIVE</p>
         <h1 className="t-display">
           선생님이 만든 것을
           <br />
           한곳에 쌓는 아카이브
         </h1>
         <p className={`t-body-lg ${s.lead}`}>
-          교실에서 직접 만들고 써 본 수업 도구, 업무 도구, 교실 놀이를 모았습니다. 로그인 없이 바로 열어 보세요.
+          교실에서 직접 만들고 써 본 수업 도구, 업무 도구, 교실 놀이와 그 밖의 작품을 모았습니다. 로그인 없이 바로 열어 보세요.
         </p>
         <div className={s.ctas}>
           <ButtonLink href="/works">작품 둘러보기</ButtonLink>
@@ -53,7 +53,6 @@ export default function Home() {
 
       <section className={s.band}>
         <div>
-          <p className="t-eyebrow">SUBMIT</p>
           <h2 className="t-h2">교실을 위해 만든 것이 있나요?</h2>
           <p className={s.bandText}>로그인하고 작품을 공유해 보세요. 올린 작품은 마이페이지에서 관리할 수 있습니다.</p>
         </div>
@@ -105,7 +104,7 @@ async function PurposeIndex() {
 async function Latest() {
   const works = await getLatestWorks(8);
   if (!works.length) return <p className={s.bandText}>아직 공개된 작품이 없어요. 첫 작품을 올려 주세요.</p>;
-  return <WorkGrid works={works} priorityCount={4} />;
+  return <WorkGrid works={works} priorityCount={4} reactions={await reactionProps(works.map((w) => w.slug))} />;
 }
 
 async function Projects() {

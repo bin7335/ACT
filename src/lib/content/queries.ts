@@ -2,6 +2,7 @@ import "server-only";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { connection } from "next/server";
 import { db, schema } from "@/lib/db";
+import { bookmarkCounts, likeCounts } from "./stats";
 import {
   LINK_KINDS,
   type LinkKind,
@@ -42,7 +43,7 @@ function makersFor(slugs: string[]): Map<string, MakerRef[]> {
   return map;
 }
 
-function toSummary(w: WorkRow, makers: MakerRef[]): WorkSummary {
+function toSummary(w: WorkRow, makers: MakerRef[], counts: { likes: number; bookmarks: number } = { likes: 0, bookmarks: 0 }): WorkSummary {
   const links = toLinks(w.links);
   return {
     slug: w.slug,
@@ -60,12 +61,18 @@ function toSummary(w: WorkRow, makers: MakerRef[]): WorkSummary {
     publishedAt: w.publishedAt,
     updatedAt: w.updatedAt,
     linkBroken: w.linkBroken,
+    viewCount: w.viewCount,
+    likeCount: counts.likes,
+    bookmarkCount: counts.bookmarks,
   };
 }
 
 function summaries(rows: WorkRow[]): WorkSummary[] {
   const m = makersFor(rows.map((r) => r.slug));
-  return rows.map((r) => toSummary(r, m.get(r.slug) ?? []));
+  const slugs = rows.map((r) => r.slug);
+  const likes = likeCounts(slugs);
+  const bookmarks = bookmarkCounts(slugs);
+  return rows.map((r) => toSummary(r, m.get(r.slug) ?? [], { likes: likes.get(r.slug) ?? 0, bookmarks: bookmarks.get(r.slug) ?? 0 }));
 }
 
 const published = eq(schema.work.status, "published");
@@ -73,7 +80,12 @@ const newest = [desc(schema.work.publishedAt), desc(schema.work.createdAt)];
 
 // ── Archive ──────────────────────────────────────────────────────
 
-export type ArchiveQuery = { purpose?: WorkPurpose; type?: WorkType; audience?: string; subject?: string; q?: string; sort?: "new" | "title"; page?: number };
+export const ARCHIVE_SORTS = ["likes", "new", "title", "bookmarks"] as const;
+export type ArchiveSort = (typeof ARCHIVE_SORTS)[number];
+/** 정렬을 고르지 않았을 때의 순서. 주소에는 넣지 않는다. */
+export const DEFAULT_SORT: ArchiveSort = "likes";
+
+export type ArchiveQuery = { purpose?: WorkPurpose; type?: WorkType; audience?: string; subject?: string; q?: string; sort?: ArchiveSort; page?: number };
 
 export const PAGE_SIZE = 24;
 
@@ -95,13 +107,14 @@ export function parseArchiveQuery(sp: Record<string, string | string[] | undefin
   const purpose = one("use");
   const type = one("type");
   const page = Number(one("page") ?? 1);
+  const sort = one("sort");
   return {
     purpose: (WORK_PURPOSES as readonly string[]).includes(purpose ?? "") ? (purpose as WorkPurpose) : undefined,
     type: (WORK_TYPES as readonly string[]).includes(type ?? "") ? (type as WorkType) : undefined,
     audience: one("audience"),
     subject: one("subject"),
     q: one("q")?.slice(0, 60),
-    sort: one("sort") === "title" ? "title" : "new",
+    sort: (ARCHIVE_SORTS as readonly string[]).includes(sort ?? "") ? (sort as ArchiveSort) : DEFAULT_SORT,
     page: Number.isFinite(page) && page > 0 ? Math.floor(page) : 1,
   };
 }
@@ -138,7 +151,11 @@ export async function getArchive(query: ArchiveQuery): Promise<ArchiveResult> {
   };
 
   let items = base.filter(matchPurpose).filter(matchType).filter(matchAud).filter(matchSub);
-  if (query.sort === "title") items = [...items].sort((a, b) => a.title.localeCompare(b.title, "ko"));
+  // 정렬은 안정적이라 숫자가 같은 작품끼리는 최신순이 유지된다.
+  const sort = query.sort ?? DEFAULT_SORT;
+  if (sort === "title") items = [...items].sort((a, b) => a.title.localeCompare(b.title, "ko"));
+  else if (sort === "likes") items = [...items].sort((a, b) => b.likeCount - a.likeCount);
+  else if (sort === "bookmarks") items = [...items].sort((a, b) => b.bookmarkCount - a.bookmarkCount);
   const total = items.length;
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const page = Math.min(query.page ?? 1, pageCount);

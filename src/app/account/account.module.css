@@ -260,6 +260,23 @@
   padding: var(--space-3) 0;
   border-bottom: var(--stroke-default) solid var(--color-border-default);
 }
+.memberRow > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.memberRow > form {
+  flex-shrink: 0;
+}
+.roleForm {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+.roleForm select {
+  width: auto;
+  min-width: 104px;
+}
 .memberRow strong {
   color: var(--color-text-primary);
 }

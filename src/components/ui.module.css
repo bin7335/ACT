@@ -130,6 +130,10 @@
   color: var(--color-purpose-play-fg);
   background: var(--color-purpose-play-bg);
 }
+.badge[data-purpose="other"] {
+  color: var(--color-purpose-other-fg);
+  background: var(--color-purpose-other-bg);
+}
 
 .status {
   display: inline-flex;

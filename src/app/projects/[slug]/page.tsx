@@ -5,6 +5,7 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { WorkGrid } from "@/components/WorkCard";
 import p from "@/components/page.module.css";
 import { getProject } from "@/lib/content/queries";
+import { reactionProps } from "@/lib/content/stats";
 
 export async function generateMetadata(props: PageProps<"/projects/[slug]">): Promise<Metadata> {
   const data = await getProject((await props.params).slug);
@@ -19,7 +20,6 @@ export default async function ProjectPage(props: PageProps<"/projects/[slug]">) 
   return (
     <div className={`container ${p.page}`}>
       <SectionHeader
-        eyebrow={`PROJECT / ${project.year} ${project.term}`}
         title={project.name}
         description={
           <>
@@ -40,7 +40,7 @@ export default async function ProjectPage(props: PageProps<"/projects/[slug]">) 
           </>
         }
       />
-      {works.length ? <WorkGrid works={works} /> : <p className={p.empty}>아직 공개된 결과물이 없어요.</p>}
+      {works.length ? <WorkGrid works={works} reactions={await reactionProps(works.map((w) => w.slug))} /> : <p className={p.empty}>아직 공개된 결과물이 없어요.</p>}
     </div>
   );
 }

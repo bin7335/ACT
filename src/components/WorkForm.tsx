@@ -21,6 +21,7 @@ const TYPE_HINT: Record<string, string> = {
   "mobile-app": "스토어에서 받는 앱",
   video: "YouTube 등에 올린 영상",
   material: "활동지, 슬라이드 등 수업 자료",
+  other: "앞의 넷에 해당하지 않는 형태",
 };
 
 export function WorkForm({ action, initial, mode, projects, currentThumbnail, submitLabel, simple = false }: Props) {

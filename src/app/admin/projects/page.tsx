@@ -16,7 +16,7 @@ export const metadata: Metadata = { title: "프로젝트·제작자 관리", rob
 export default function AdminProjectsPage() {
   return (
     <div className={`container ${p.page}`}>
-      <Suspense fallback={<SectionHeader eyebrow="ADMIN" title="프로젝트·제작자" />}>
+      <Suspense fallback={<SectionHeader title="프로젝트·제작자" />}>
         <Content />
       </Suspense>
     </div>
@@ -31,7 +31,7 @@ async function Content() {
       <Link href="/admin" className={s.headLink}>
         ← 검수 목록
       </Link>
-      <SectionHeader eyebrow="ADMIN" title="프로젝트·제작자" />
+      <SectionHeader title="프로젝트·제작자" />
 
       <section className={p.section} aria-labelledby="projects">
         <div className={p.sectionHead}>
