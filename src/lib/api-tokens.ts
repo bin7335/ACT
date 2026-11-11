@@ -40,7 +40,7 @@ export function memberForToken(raw: string | null | undefined) {
   if (!isTokenShape(raw)) return null;
   const hash = hashToken(raw);
   const row = db
-    .select({ memberId: schema.member.id, name: schema.member.name, isAdmin: schema.member.isAdmin })
+    .select({ memberId: schema.member.id, name: schema.member.name, isAdmin: schema.member.isAdmin, isResearch: schema.member.isResearch })
     .from(schema.apiToken)
     .innerJoin(schema.member, eq(schema.member.id, schema.apiToken.memberId))
     .where(eq(schema.apiToken.tokenHash, hash))

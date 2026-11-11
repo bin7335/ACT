@@ -1,10 +1,11 @@
 import "server-only";
 import { asc, desc, eq, or, sql } from "drizzle-orm";
 import { db, schema } from "./db";
+import type { Role } from "./roles";
 
-export type MemberRow = { id: string; name: string; username: string | null; email: string | null; isAdmin: boolean };
+export type MemberRow = { id: string; name: string; username: string | null; email: string | null; isAdmin: boolean; isResearch: boolean };
 
-const columns = { id: schema.member.id, name: schema.member.name, username: schema.member.username, email: schema.googleIdentity.email, isAdmin: schema.member.isAdmin };
+const columns = { id: schema.member.id, name: schema.member.name, username: schema.member.username, email: schema.googleIdentity.email, isAdmin: schema.member.isAdmin, isResearch: schema.member.isResearch };
 
 // 계정 설정은 현재 운영진, 관리자 화면은 최근 가입 회원 30명을 기본으로 보여 준다.
 export function searchMembers(query: string, scope: "admins" | "all" = "admins"): MemberRow[] {
@@ -29,6 +30,13 @@ export function listMembers(page: number, perPage = 10) {
   return { items, total, page: current, pageCount };
 }
 
+/** 운영진 권한만 켜고 끈다(연구회회원 여부는 그대로 둔다). */
 export function setMemberAdmin(id: string, isAdmin: boolean) {
   return db.update(schema.member).set({ isAdmin }).where(eq(schema.member.id, id)).returning({ id: schema.member.id }).get();
+}
+
+/** 역할을 하나로 정한다. 관리자는 연구회 프로젝트 권한을 포함하므로 연구회 표시는 지운다. */
+export function setMemberRole(id: string, role: Role) {
+  return db.update(schema.member).set({ isAdmin: role === "admin", isResearch: role === "research" })
+    .where(eq(schema.member.id, id)).returning({ id: schema.member.id }).get();
 }

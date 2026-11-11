@@ -11,6 +11,8 @@ export const member = sqliteTable("member", {
   name: text("name").notNull(),
   /** 운영진 권한. 회원가입만으로는 얻지 않으며 기존 운영진이 부여한다. */
   isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
+  /** 연구회회원. 연구회 프로젝트를 보고, 만들고, 글을 쓸 수 있다. 운영진이 부여한다. */
+  isResearch: integer("is_research", { mode: "boolean" }).notNull().default(false),
   createdAt: ts("created_at").notNull().default(now),
 });
 
@@ -52,6 +54,25 @@ export const project = sqliteTable("project", {
   name: text("name").notNull(),
   summary: text("summary").notNull(),
 });
+
+/** 연구회 프로젝트 게시글 — 연구회회원과 운영진만 쓰고 읽는다. */
+export const projectPost = sqliteTable(
+  "project_post",
+  {
+    id: text("id").primaryKey(),
+    projectSlug: text("project_slug")
+      .notNull()
+      .references(() => project.slug, { onDelete: "cascade", onUpdate: "cascade" }),
+    /** 글쓴 회원. 탈퇴하거나 공용 비밀번호로 쓴 글은 null. */
+    authorId: text("author_id").references(() => member.id, { onDelete: "set null" }),
+    /** 쓸 때의 이름을 남겨 둔다. */
+    authorName: text("author_name").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    createdAt: ts("created_at").notNull().default(now),
+  },
+  (t) => [index("project_post_project_idx").on(t.projectSlug, t.createdAt)],
+);
 
 export const work = sqliteTable(
   "work",
@@ -100,6 +121,19 @@ export const workLike = sqliteTable(
   (t) => [primaryKey({ columns: [t.workSlug, t.clientId] })],
 );
 
+/** 북마크(즐겨찾기) 집계 — 화면은 브라우저 저장소를 쓰고, 숫자만 서버에 모은다. */
+export const workBookmark = sqliteTable(
+  "work_bookmark",
+  {
+    workSlug: text("work_slug")
+      .notNull()
+      .references(() => work.slug, { onDelete: "cascade", onUpdate: "cascade" }),
+    clientId: text("client_id").notNull(),
+    createdAt: ts("created_at").notNull().default(now),
+  },
+  (t) => [primaryKey({ columns: [t.workSlug, t.clientId] })],
+);
+
 /** 회원별 API 토큰 — 원문은 저장하지 않고 SHA-256 해시만 둔다. */
 export const apiToken = sqliteTable(
   "api_token",
@@ -114,19 +148,6 @@ export const apiToken = sqliteTable(
     lastUsedAt: ts("last_used_at"),
   },
   (t) => [index("api_token_member_idx").on(t.memberId)],
-);
-
-/** 북마크(즐겨찾기) 집계 — 화면은 브라우저 저장소를 쓰고, 숫자만 서버에 모은다. */
-export const workBookmark = sqliteTable(
-  "work_bookmark",
-  {
-    workSlug: text("work_slug")
-      .notNull()
-      .references(() => work.slug, { onDelete: "cascade", onUpdate: "cascade" }),
-    clientId: text("client_id").notNull(),
-    createdAt: ts("created_at").notNull().default(now),
-  },
-  (t) => [primaryKey({ columns: [t.workSlug, t.clientId] })],
 );
 
 export const workMaker = sqliteTable(

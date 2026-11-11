@@ -47,6 +47,15 @@ export async function isAdmin() {
   return !!(await currentMember())?.isAdmin;
 }
 
+/**
+ * 연구회 프로젝트 권한. 관리자와 연구회회원만 프로젝트를 보고, 만들고, 글을 쓴다.
+ * member는 로그인한 회원(공용 비밀번호로만 들어온 운영진은 null), admin은 관리자 여부.
+ */
+export async function projectAccess() {
+  const [admin, member] = await Promise.all([isAdmin(), currentMember()]);
+  return { allowed: admin || !!member?.isResearch, admin, member };
+}
+
 export async function requireAdmin() {
   if (!(await isAdmin())) redirect("/admin/login");
 }

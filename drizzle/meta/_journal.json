@@ -50,6 +50,13 @@
       "when": 1794150858699,
       "tag": "0006_moaning_living_tribunal",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1794401962213,
+      "tag": "0007_graceful_spirit",
+      "breakpoints": true
     }
   ]
 }

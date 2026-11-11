@@ -31,7 +31,7 @@ export function AdminMembers({ selfId, query, result, context = "settings" }: { 
       {!members.length && <p>일치하는 회원이 없어요. 이름, 아이디 또는 Google 이메일로 다시 검색해 주세요.</p>}
       {members.length > 0 && <ul className={s.members}>{members.map(m => <li key={m.id} className={s.memberRow}>
         <div>
-          <strong>{m.name}</strong>{m.isAdmin && <span className={s.badge}>운영진</span>}{m.id === selfId && <span> (나)</span>}
+          <strong>{m.name}</strong>{m.isAdmin ? <span className={s.badge}>운영진</span> : m.isResearch && <span className={s.badge}>연구회회원</span>}{m.id === selfId && <span> (나)</span>}
           <br /><span>{[m.username && `@${m.username}`, m.email].filter(Boolean).join(" · ") || "Google 계정"}</span>
         </div>
         {m.id !== selfId && <form action={setMemberAdminAction}>

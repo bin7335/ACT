@@ -2,15 +2,19 @@ import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans_KR } from "next/font/google";
 import Link from "next/link";
 import { Suspense } from "react";
-import { AdminTab, TopNav, TopNavView } from "@/components/TopNav";
+import { AdminTab, ProjectsTab, TopNav, TopNavView } from "@/components/TopNav";
 import { site } from "@/lib/site";
 import { currentMember } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { isAdmin, projectAccess } from "@/lib/admin";
 import { AccountControl } from "@/components/AccountControl";
 
 async function HeaderAccount() {
   const member = await currentMember();
   return <AccountControl member={member ? { name: member.name, username: member.username, isAdmin: member.isAdmin } : null} />;
+}
+
+async function HeaderProjectsTab() {
+  return <ProjectsTab show={(await projectAccess()).allowed} />;
 }
 
 async function HeaderAdminTab() {
@@ -55,6 +59,7 @@ export default function RootLayout({ children, auth }: LayoutProps<"/">) {
         <Suspense fallback={<TopNavView siteName={site.name} pathname="" />}>
           <TopNav
             siteName={site.name}
+            projects={<Suspense fallback={null}><HeaderProjectsTab /></Suspense>}
             admin={<Suspense fallback={null}><HeaderAdminTab /></Suspense>}
             account={<Suspense fallback={<span aria-label="계정 확인 중" style={{ width: 56 }} />}><HeaderAccount /></Suspense>}
           />
@@ -74,7 +79,6 @@ export default function RootLayout({ children, auth }: LayoutProps<"/">) {
             <nav aria-label="하단 메뉴" className={s.footerNav}>
               <Link href="/works">작품</Link>
               <Link href="/makers">제작자</Link>
-              <Link href="/projects">연구회 프로젝트</Link>
               <Link href="/about">소개</Link>
               <Link href="/submit">작품 올리기</Link>
             </nav>

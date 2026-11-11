@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { ButtonLink } from "@/components/ui";
 import { WorkGrid, WorkGridSkeleton } from "@/components/WorkCard";
 import p from "@/components/page.module.css";
+import { projectAccess } from "@/lib/admin";
 import { getArchive, getLatestWorks, getStats, listProjects } from "@/lib/content/queries";
 import { reactionProps } from "@/lib/content/stats";
 import { WORK_PURPOSE_HINT, WORK_PURPOSE_LABEL, WORK_PURPOSES } from "@/lib/content/types";
@@ -107,7 +108,9 @@ async function Latest() {
   return <WorkGrid works={works} priorityCount={4} reactions={await reactionProps(works.map((w) => w.slug))} />;
 }
 
+// 연구회회원과 관리자에게만 보인다.
 async function Projects() {
+  if (!(await projectAccess()).allowed) return null;
   const projects = (await listProjects()).slice(0, 3);
   if (!projects.length) return null;
   return (

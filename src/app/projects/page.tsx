@@ -4,9 +4,11 @@ import { Suspense } from "react";
 import { SectionHeader } from "@/components/SectionHeader";
 import p from "@/components/page.module.css";
 import { listProjects } from "@/lib/content/queries";
+import { ProjectForm } from "@/app/admin/projects/ProjectForm";
+import { projectGate, ProjectsRestricted } from "./access";
 import s from "./projects.module.css";
 
-export const metadata: Metadata = { title: "연구회 프로젝트", description: "연도별 연구회 프로젝트와 결과물", alternates: { canonical: "/projects" } };
+export const metadata: Metadata = { title: "연구회 프로젝트", robots: { index: false, follow: false } };
 
 export default function ProjectsPage() {
   return (
@@ -19,6 +21,7 @@ export default function ProjectsPage() {
 }
 
 async function Projects() {
+  if (!(await projectGate("/projects"))) return <ProjectsRestricted />;
   const projects = await listProjects();
   const years = [...new Set(projects.map((pr) => pr.year))];
   return (
@@ -47,6 +50,9 @@ async function Projects() {
           </ul>
         </section>
       ))}
+      <section className={p.section} aria-label="새 프로젝트 만들기">
+        <ProjectForm />
+      </section>
     </>
   );
 }

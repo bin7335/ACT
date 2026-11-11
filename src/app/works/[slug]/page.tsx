@@ -12,6 +12,7 @@ import p from "@/components/page.module.css";
 import { getPublishedWork, getRelatedWorks } from "@/lib/content/queries";
 import { likeState, reactionProps, recordView } from "@/lib/content/stats";
 import { LINK_LABEL, WORK_PURPOSE_LABEL, WORK_TYPE_LABEL, type WorkLink } from "@/lib/content/types";
+import { projectAccess } from "@/lib/admin";
 import { formatDate } from "@/lib/format";
 import { youtubeId } from "@/lib/remote-image";
 import { site } from "@/lib/site";
@@ -35,6 +36,8 @@ export default async function WorkPage(props: PageProps<"/works/[slug]">) {
   if (!work) notFound();
   await recordView(work.slug);
   const likes = await likeState(work.slug);
+  // 연구회 프로젝트 이름은 연구회회원과 관리자에게만 보인다.
+  const showProject = !!work.project && (await projectAccess()).allowed;
   const related = await getRelatedWorks(work);
   const yt = work.links.map((l) => (l.kind === "youtube" ? youtubeId(l.url) : null)).find(Boolean);
   const [primary, ...rest] = work.links;
@@ -134,7 +137,7 @@ export default async function WorkPage(props: PageProps<"/works/[slug]">) {
                 </dd>
               </div>
             )}
-            {work.project && (
+            {work.project && showProject && (
               <div>
                 <dt>연구회 프로젝트</dt>
                 <dd>

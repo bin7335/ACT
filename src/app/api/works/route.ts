@@ -39,7 +39,10 @@ export async function POST(request: Request) {
   }
   if (!body || typeof body !== "object" || Array.isArray(body)) return fail("JSON 객체를 보내 주세요.", 400);
 
-  const parsed = validateWork(valuesFromApi(member.name, body as Record<string, unknown>));
+  const values = valuesFromApi(member.name, body as Record<string, unknown>);
+  // 연구회 프로젝트에는 관리자와 연구회회원만 작품을 연결한다.
+  if (!member.isAdmin && !member.isResearch) values.project = "";
+  const parsed = validateWork(values);
   if ("errors" in parsed) return fail("입력값을 확인해 주세요.", 400, parsed.errors);
 
   const slug = await createMemberWork(parsed.data, { thumbnail: null, ownerId: member.memberId });

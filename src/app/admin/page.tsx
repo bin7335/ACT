@@ -43,7 +43,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/admin">["
   return (
     <>
       <SectionHeader
-        title={membersView ? "회원 권한 설정" : "검수와 관리"}
+        title={membersView ? "회원 역할 설정" : "검수와 관리"}
         action={
           <>
             <Link href="/admin/projects" className={s.headLink}>
@@ -64,7 +64,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/admin">["
       />
       <nav aria-label="관리자 메뉴" className={p.row}>
         <Link href="/admin" className={s.tab} aria-current={!membersView ? "page" : undefined}>작품 검수</Link>
-        <Link href="/admin?view=members" className={s.tab} aria-current={membersView ? "page" : undefined}>회원 권한 설정</Link>
+        <Link href="/admin?view=members" className={s.tab} aria-current={membersView ? "page" : undefined}>회원 역할 설정</Link>
       </nav>
       {membersView ? (
         member?.isAdmin && memberList ? <MemberAdminList items={memberList.items} selfId={member.id} page={memberList.page} total={memberList.total} pageCount={memberList.pageCount} query={memberQuery} result={typeof sp.admin === "string" ? sp.admin : undefined} />

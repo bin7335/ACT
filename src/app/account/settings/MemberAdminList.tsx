@@ -1,25 +1,28 @@
 import Link from "next/link";
 import { setMemberAdminAction } from "@/app/actions";
 import type { MemberRow } from "@/lib/members";
+import { ROLE_LABEL, ROLES, roleOf } from "@/lib/roles";
 import { Button, Notice } from "@/components/ui";
 import f from "@/components/form.module.css";
 import p from "@/components/page.module.css";
 import s from "../account.module.css";
 
 const RESULT: Record<string, { tone?: "danger" | "success"; text: string }> = {
-  granted: { tone: "success", text: "운영진 권한을 부여했어요." },
-  revoked: { tone: "success", text: "일반 회원으로 바꿨어요." },
-  self: { tone: "danger", text: "내 운영진 권한은 직접 해제할 수 없어요. 다른 운영진에게 요청해 주세요." },
+  "role-admin": { tone: "success", text: "관리자로 바꿨어요." },
+  "role-research": { tone: "success", text: "연구회회원으로 바꿨어요." },
+  "role-member": { tone: "success", text: "일반회원으로 바꿨어요." },
+  self: { tone: "danger", text: "내 관리자 권한은 직접 해제할 수 없어요. 다른 관리자에게 요청해 주세요." },
   missing: { tone: "danger", text: "회원을 찾지 못했어요." },
-  denied: { tone: "danger", text: "운영진만 권한을 바꿀 수 있어요." },
+  denied: { tone: "danger", text: "관리자만 역할을 바꿀 수 있어요." },
 };
 
 function MemberItem({ member, selfId, page, query }: { member: MemberRow; selfId: string; page: number; query: string }) {
+  const role = roleOf(member);
   return (
     <li className={s.memberRow}>
       <div>
         <strong>{member.name}</strong>
-        {member.isAdmin && <span className={s.badge}>운영진</span>}
+        {role !== "member" && <span className={s.badge}>{ROLE_LABEL[role]}</span>}
         {member.id === selfId && <span> (나)</span>}
         <br />
         <span>{[member.username && `@${member.username}`, member.email].filter(Boolean).join(" · ") || "Google 계정"}</span>
@@ -30,10 +33,11 @@ function MemberItem({ member, selfId, page, query }: { member: MemberRow; selfId
           <input type="hidden" name="member" value={member.id} />
           <input type="hidden" name="q" value={query} />
           <input type="hidden" name="page" value={page} />
-          <label className="visually-hidden" htmlFor={`role-${member.id}`}>{member.name} 권한</label>
-          <select id={`role-${member.id}`} name="grant" className={f.select} defaultValue={member.isAdmin ? "1" : "0"}>
-            <option value="0">일반 회원</option>
-            <option value="1">운영진</option>
+          <label className="visually-hidden" htmlFor={`role-${member.id}`}>{member.name} 역할</label>
+          <select id={`role-${member.id}`} name="role" className={f.select} defaultValue={role}>
+            {ROLES.map((r) => (
+              <option key={r} value={r}>{ROLE_LABEL[r]}</option>
+            ))}
           </select>
           <Button type="submit" size="sm">저장</Button>
         </form>
@@ -49,8 +53,13 @@ export function MemberAdminList({ items, selfId, page, total, pageCount, query, 
   return (
     <section id="admins" className={s.setting} aria-labelledby="admins-heading">
       <div className={s.settingHead}>
-        <h2 id="admins-heading">회원 권한 설정</h2>
-        <p>권한을 바꾸고 저장하면 바로 적용돼요. 운영진은 검수 없이 작품을 올릴 수 있습니다.</p>
+        <h2 id="admins-heading">회원 역할 설정</h2>
+        <p>역할을 바꾸고 저장하면 바로 적용돼요.</p>
+        <ul style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8, fontSize: 13, lineHeight: "20px", color: "var(--color-text-secondary)" }}>
+          <li><strong>관리자</strong> — 모든 기능. 작품을 검수 없이 올립니다.</li>
+          <li><strong>연구회회원</strong> — 연구회 프로젝트를 보고, 만들고, 글을 씁니다. 작품은 승인 후 공개됩니다.</li>
+          <li><strong>일반회원</strong> — 작품을 구경하고 올립니다. 작품은 승인 후 공개됩니다.</li>
+        </ul>
       </div>
       <div className={s.settingBody}>
         {notice && <Notice tone={notice.tone}>{notice.text}</Notice>}

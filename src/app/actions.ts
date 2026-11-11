@@ -5,7 +5,7 @@ import { currentMember, requireMember } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { fillMissingThumbnail } from "@/lib/content/auto-thumbnail";
-import { checkAdminPassword, endAdminSession, isAdmin, requireAdmin, startAdminSession } from "@/lib/admin";
+import { checkAdminPassword, endAdminSession, isAdmin, projectAccess, requireAdmin, startAdminSession } from "@/lib/admin";
 import { checkLinks } from "@/lib/content/link-check";
 import { readWorkForm, readMemberWorkForm, valuesFromWork, validateWork, type WorkFormState } from "@/lib/content/form";
 import { createProject, deleteWork, setWorkStatus, updateMaker, updateWork } from "@/lib/content/mutations";
@@ -13,7 +13,9 @@ import { createMemberWork } from "@/lib/content/submission";
 import { getAnyWork } from "@/lib/content/queries";
 import { bookmarkCount, likeCount, setBookmarkRow, toggleLikeRow, visitorId } from "@/lib/content/stats";
 import { createApiToken, listApiTokens, revokeApiToken } from "@/lib/api-tokens";
-import { setMemberAdmin } from "@/lib/members";
+import { setMemberAdmin, setMemberRole } from "@/lib/members";
+import { isRole } from "@/lib/roles";
+import { createProjectPost, deleteProjectPost } from "@/lib/content/posts";
 import { WORK_STATUS_LABEL, type WorkStatus } from "@/lib/content/types";
 import { clientIp, rateLimit } from "@/lib/security";
 import { saveThumbnail, UploadError } from "@/lib/uploads";
@@ -127,8 +129,9 @@ export async function deleteWorkAction(fd: FormData) {
   redirect("/admin?deleted=1");
 }
 
+// 연구회 프로젝트는 관리자와 연구회회원이 만든다.
 export async function createProjectAction(_prev: { error?: string; ok?: boolean }, fd: FormData): Promise<{ error?: string; ok?: boolean }> {
-  await requireAdmin();
+  if (!(await projectAccess()).allowed) return { error: "연구회회원만 프로젝트를 만들 수 있어요." };
   const year = Number(fd.get("year"));
   const term = String(fd.get("term") ?? "").trim();
   const name = String(fd.get("name") ?? "").trim();
@@ -138,6 +141,34 @@ export async function createProjectAction(_prev: { error?: string; ok?: boolean 
   createProject({ year, term, name, summary });
   refresh();
   return { ok: true };
+}
+
+// ── 연구회 프로젝트 게시글 ───────────────────────────────────────
+
+export async function createProjectPostAction(_prev: { error?: string; ok?: boolean }, fd: FormData): Promise<{ error?: string; ok?: boolean }> {
+  const access = await projectAccess();
+  if (!access.allowed) return { error: "연구회회원만 글을 쓸 수 있어요." };
+  if (!rateLimit(`post:${access.member?.id ?? (await clientIp())}`, 20, 60 * 60 * 1000)) {
+    return { error: "짧은 시간에 너무 많이 썼어요. 잠시 뒤 다시 시도해 주세요." };
+  }
+  const result = createProjectPost({
+    projectSlug: String(fd.get("project") ?? ""),
+    authorId: access.member?.id ?? null,
+    authorName: access.member?.name ?? "운영진",
+    title: String(fd.get("title") ?? ""),
+    body: String(fd.get("body") ?? ""),
+  });
+  if ("error" in result) return { error: result.error };
+  refresh();
+  return { ok: true };
+}
+
+// 글쓴이 본인이나 관리자만 지운다.
+export async function deleteProjectPostAction(fd: FormData) {
+  const access = await projectAccess();
+  if (!access.allowed) return;
+  deleteProjectPost(String(fd.get("id") ?? ""), { memberId: access.member?.id ?? null, admin: access.admin });
+  refresh();
 }
 
 export async function updateMakerAction(fd: FormData) {
@@ -164,6 +195,14 @@ export async function setMemberAdminAction(fd: FormData) {
   };
   if (!member.isAdmin) back("denied");
   const target = String(fd.get("member") ?? "");
+  // 관리자 화면은 역할(일반회원·연구회회원·관리자)을 하나 골라 보낸다.
+  const role = fd.get("role");
+  if (isRole(role)) {
+    if (target === member.id && role !== "admin") back("self");
+    const updated = setMemberRole(target, role);
+    if (updated) revalidatePath("/", "layout");
+    back(updated ? `role-${role}` : "missing");
+  }
   const grant = fd.get("grant") === "1";
   if (target === member.id && !grant) back("self");
   const changed = setMemberAdmin(target, grant);

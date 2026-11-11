@@ -10,12 +10,25 @@ import s from "./TopNav.module.css";
 const MENU = [
   { href: "/works", label: "작품" },
   { href: "/makers", label: "제작자" },
-  { href: "/projects", label: "연구회 프로젝트" },
   { href: "/about", label: "소개" },
 ];
 
-export function TopNav({ siteName, account, admin }: { siteName: string; account?: ReactNode; admin?: ReactNode }) {
-  return <TopNavView siteName={siteName} pathname={usePathname()} account={account} admin={admin} />;
+export function TopNav({ siteName, account, admin, projects }: { siteName: string; account?: ReactNode; admin?: ReactNode; projects?: ReactNode }) {
+  return <TopNavView siteName={siteName} pathname={usePathname()} account={account} admin={admin} projects={projects} />;
+}
+
+/** 연구회회원과 관리자에게만 보이는 상단 탭. 서버에서 권한을 확인해 show로 넘긴다. */
+export function ProjectsTab({ show }: { show: boolean }) {
+  const pathname = usePathname();
+  if (!show) return null;
+  const on = pathname === "/projects" || pathname.startsWith("/projects/");
+  return (
+    <li>
+      <Link href="/projects" aria-current={on ? "page" : undefined}>
+        연구회 프로젝트
+      </Link>
+    </li>
+  );
 }
 
 /** 운영진에게만 보이는 상단 탭. 서버에서 권한을 확인해 isAdmin으로 넘긴다. */
@@ -33,7 +46,7 @@ export function AdminTab({ isAdmin }: { isAdmin: boolean }) {
 }
 
 /** usePathname 없이 그리는 정적 셸(프리렌더용 Suspense fallback) */
-export function TopNavView({ siteName, pathname, account, admin }: { siteName: string; pathname: string; account?: ReactNode; admin?: ReactNode }) {
+export function TopNavView({ siteName, pathname, account, admin, projects }: { siteName: string; pathname: string; account?: ReactNode; admin?: ReactNode; projects?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const favCount = useFavorites().length;
   const [hint, setHint] = useState(false);
@@ -81,6 +94,7 @@ export function TopNavView({ siteName, pathname, account, admin }: { siteName: s
                 </Link>
               </li>
             ))}
+            {projects}
             {admin}
           </ul>
         </nav>
