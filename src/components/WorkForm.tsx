@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useId, useRef, useState, startTransition, type FormEvent } from "react";
 import { AUDIENCES, LINK_KINDS, LINK_LABEL, WORK_PURPOSE_HINT, WORK_PURPOSE_LABEL, WORK_PURPOSES, WORK_TYPE_LABEL, WORK_TYPES } from "@/lib/content/types";
 import { MAX_LINKS, type WorkFormState, type WorkFormValues } from "@/lib/content/form";
+import { Toast } from "./Toast";
 import { Button, Notice } from "./ui";
 import f from "./form.module.css";
 
@@ -76,7 +77,7 @@ export function WorkForm({ action, initial, mode, projects, currentThumbnail, su
 
   if (simple) return <form action={formAction} onSubmit={onSubmit} onChange={() => setDirty(true)} className={f.form}>
     {errorCount > 0 && <div ref={summaryRef} tabIndex={-1}><Notice tone="danger">{Object.values(e).join(" ")}</Notice></div>}
-    {state.saved && <Notice tone="success">저장했어요.</Notice>}
+    {state.saved && <Toast signal={state}>저장했어요.</Toast>}
     <input type="text" name="website" tabIndex={-1} autoComplete="off" className={f.honeypot} aria-hidden />
     <div className={f.field}><label className={f.label} htmlFor={`${uid}-purpose`}>어디에 쓰나요?</label><select id={`${uid}-purpose`} name="purpose" className={f.select} defaultValue={initial.purpose} required><option value="" disabled>선택해 주세요</option>{WORK_PURPOSES.map(u => <option key={u} value={u}>{WORK_PURPOSE_LABEL[u]} — {WORK_PURPOSE_HINT[u]}</option>)}</select></div>
     <div className={f.field}><label className={f.label} htmlFor={`${uid}-type`}>작품 형태</label><select id={`${uid}-type`} name="type" className={f.select} defaultValue={initial.type} required><option value="" disabled>선택해 주세요</option>{WORK_TYPES.map(type => <option key={type} value={type}>{WORK_TYPE_LABEL[type]}</option>)}</select></div>
@@ -99,9 +100,9 @@ export function WorkForm({ action, initial, mode, projects, currentThumbnail, su
         </div>
       )}
       {state.saved && (
-        <Notice tone="success">
+        <Toast signal={state}>
           <strong>저장했어요.</strong> {mode === "edit" ? "변경 내용이 반영되었습니다." : ""}
-        </Notice>
+        </Toast>
       )}
 
       <input type="text" name="website" tabIndex={-1} autoComplete="off" className={f.honeypot} aria-hidden />
