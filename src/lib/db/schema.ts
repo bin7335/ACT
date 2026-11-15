@@ -4,8 +4,39 @@ import { index, integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlit
 const ts = (name: string) => integer(name, { mode: "timestamp_ms" });
 const now = sql`(cast(unixepoch('subsecond') * 1000 as integer))`;
 
-// 회원 로그인은 아직 없다(추후 도입). 작품 수정 권한은 제출 시 발급하는 수정 링크 토큰으로 확인하고,
-// 로그인을 붙이면 owner_id에 회원 ID를 채워 같은 행을 그대로 쓴다.
+export const member = sqliteTable("member", {
+  id: text("id").primaryKey(),
+  username: text("username").unique(),
+  passwordHash: text("password_hash"),
+  name: text("name").notNull(),
+  /** 운영진 권한. 회원가입만으로는 얻지 않으며 기존 운영진이 부여한다. */
+  isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
+  /** 연구회회원. 연구회 프로젝트를 보고, 만들고, 글을 쓸 수 있다. 운영진이 부여한다. */
+  isResearch: integer("is_research", { mode: "boolean" }).notNull().default(false),
+  createdAt: ts("created_at").notNull().default(now),
+});
+
+export const googleIdentity = sqliteTable("google_identity", {
+  subject: text("subject").primaryKey(),
+  memberId: text("member_id").notNull().unique().references(() => member.id, { onDelete: "cascade" }),
+  /** Google이 확인한 이메일(비공개). 운영진의 회원 검색과 초기 운영진 지정에만 쓴다. */
+  email: text("email"),
+});
+
+export const memberSession = sqliteTable("member_session", {
+  tokenHash: text("token_hash").primaryKey(),
+  memberId: text("member_id").notNull().references(() => member.id, { onDelete: "cascade" }),
+  expiresAt: ts("expires_at").notNull(),
+});
+
+export const oauthAttempt = sqliteTable("oauth_attempt", {
+  stateHash: text("state_hash").primaryKey(),
+  verifier: text("verifier").notNull(),
+  nonce: text("nonce").notNull(),
+  next: text("next").notNull(),
+  linkSessionHash: text("link_session_hash"),
+  expiresAt: ts("expires_at").notNull(),
+});
 
 export const maker = sqliteTable("maker", {
   slug: text("slug").primaryKey(),
@@ -24,11 +55,31 @@ export const project = sqliteTable("project", {
   summary: text("summary").notNull(),
 });
 
+/** 연구회 프로젝트 게시글 — 연구회회원과 운영진만 쓰고 읽는다. */
+export const projectPost = sqliteTable(
+  "project_post",
+  {
+    id: text("id").primaryKey(),
+    projectSlug: text("project_slug")
+      .notNull()
+      .references(() => project.slug, { onDelete: "cascade", onUpdate: "cascade" }),
+    /** 글쓴 회원. 탈퇴하거나 공용 비밀번호로 쓴 글은 null. */
+    authorId: text("author_id").references(() => member.id, { onDelete: "set null" }),
+    /** 쓸 때의 이름을 남겨 둔다. */
+    authorName: text("author_name").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    createdAt: ts("created_at").notNull().default(now),
+  },
+  (t) => [index("project_post_project_idx").on(t.projectSlug, t.createdAt)],
+);
+
 export const work = sqliteTable(
   "work",
   {
     slug: text("slug").primaryKey(),
-    type: text("type", { enum: ["web-tool", "web-app", "mobile-app", "video", "material"] }).notNull(),
+    purpose: text("purpose", { enum: ["class", "work", "play", "other"] }).notNull().default("class"),
+    type: text("type", { enum: ["web-app", "mobile-app", "video", "material", "other"] }).notNull(),
     title: text("title").notNull(),
     summary: text("summary").notNull(),
     body: text("body").notNull().default(""),
@@ -44,15 +95,59 @@ export const work = sqliteTable(
     contactEmail: text("contact_email"),
     /** 수정 링크 토큰의 SHA-256 해시. 원문은 저장하지 않는다. */
     editTokenHash: text("edit_token_hash"),
-    /** 로그인 도입 후 회원 ID */
+    /** 계정으로 관리하는 작품의 회원 ID (비회원 작품은 null) */
     ownerId: text("owner_id"),
     createdAt: ts("created_at").notNull().default(now),
     updatedAt: ts("updated_at").notNull().default(now),
     publishedAt: ts("published_at"),
     linkCheckedAt: ts("link_checked_at"),
     linkBroken: integer("link_broken", { mode: "boolean" }).notNull().default(false),
+    /** 공개 페이지 조회수. 링크 미리 불러오기는 세지 않는다. */
+    viewCount: integer("view_count").notNull().default(0),
   },
   (t) => [index("work_status_idx").on(t.status, t.publishedAt), index("work_edit_token_idx").on(t.editTokenHash)],
+);
+
+/** 좋아요 — 로그인 없이 쓸 수 있게 브라우저별 방문자 ID로 한 번만 센다. */
+export const workLike = sqliteTable(
+  "work_like",
+  {
+    workSlug: text("work_slug")
+      .notNull()
+      .references(() => work.slug, { onDelete: "cascade", onUpdate: "cascade" }),
+    clientId: text("client_id").notNull(),
+    createdAt: ts("created_at").notNull().default(now),
+  },
+  (t) => [primaryKey({ columns: [t.workSlug, t.clientId] })],
+);
+
+/** 북마크(즐겨찾기) 집계 — 화면은 브라우저 저장소를 쓰고, 숫자만 서버에 모은다. */
+export const workBookmark = sqliteTable(
+  "work_bookmark",
+  {
+    workSlug: text("work_slug")
+      .notNull()
+      .references(() => work.slug, { onDelete: "cascade", onUpdate: "cascade" }),
+    clientId: text("client_id").notNull(),
+    createdAt: ts("created_at").notNull().default(now),
+  },
+  (t) => [primaryKey({ columns: [t.workSlug, t.clientId] })],
+);
+
+/** 회원별 API 토큰 — 원문은 저장하지 않고 SHA-256 해시만 둔다. */
+export const apiToken = sqliteTable(
+  "api_token",
+  {
+    id: text("id").primaryKey(),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => member.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    createdAt: ts("created_at").notNull().default(now),
+    lastUsedAt: ts("last_used_at"),
+  },
+  (t) => [index("api_token_member_idx").on(t.memberId)],
 );
 
 export const workMaker = sqliteTable(

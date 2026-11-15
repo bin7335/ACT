@@ -27,16 +27,18 @@ async function probe(url: string): Promise<boolean> {
 }
 
 export async function checkLinks() {
-  const works = db.select({ slug: schema.work.slug, links: schema.work.links }).from(schema.work).where(eq(schema.work.status, "published")).all();
+  const works = await db.select({ slug: schema.work.slug, links: schema.work.links }).from(schema.work).where(eq(schema.work.status, "published")).all();
   let broken = 0;
   const queue = [...works];
   const worker = async () => {
     for (let w = queue.shift(); w; w = queue.shift()) {
-      const results = await Promise.all(w.links.map((l) => probe(l.url)));
-      // 대표 링크(첫 번째)가 열리지 않으면 끊김으로 표시한다.
+      // 직접 올린 영상 파일은 외부 주소가 아니므로 건너뛰고, 첫 외부 링크의 결과로 판단한다.
+      const external = w.links.filter((l) => l.kind !== "file");
+      const results = await Promise.all(external.map((l) => probe(l.url)));
+      // 대표 링크(첫 번째 외부 링크)가 열리지 않으면 끊김으로 표시한다.
       const isBroken = results.length > 0 && !results[0];
       if (isBroken) broken++;
-      db.update(schema.work).set({ linkBroken: isBroken, linkCheckedAt: new Date() }).where(eq(schema.work.slug, w.slug)).run();
+      await db.update(schema.work).set({ linkBroken: isBroken, linkCheckedAt: new Date() }).where(eq(schema.work.slug, w.slug)).run();
     }
   };
   await Promise.all(Array.from({ length: 4 }, worker));

@@ -4,6 +4,7 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { WorkGrid } from "@/components/WorkCard";
 import p from "@/components/page.module.css";
 import { getMaker } from "@/lib/content/queries";
+import { reactionProps } from "@/lib/content/stats";
 
 export async function generateMetadata(props: PageProps<"/makers/[slug]">): Promise<Metadata> {
   const data = await getMaker((await props.params).slug);
@@ -18,7 +19,6 @@ export default async function MakerPage(props: PageProps<"/makers/[slug]">) {
   return (
     <div className={`container ${p.page}`}>
       <SectionHeader
-        eyebrow={`MAKER / ${works.length} WORKS${maker.member ? " / 연구회" : ""}`}
         title={maker.name}
         description={
           <>
@@ -35,7 +35,7 @@ export default async function MakerPage(props: PageProps<"/makers/[slug]">) {
           </>
         }
       />
-      {works.length ? <WorkGrid works={works} /> : <p className={p.empty}>아직 공개된 작품이 없어요.</p>}
+      {works.length ? <WorkGrid works={works} reactions={await reactionProps(works.map((w) => w.slug))} /> : <p className={p.empty}>아직 공개된 작품이 없어요.</p>}
     </div>
   );
 }

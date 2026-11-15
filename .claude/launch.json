@@ -1,6 +1,12 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "act-dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 3000 }
+    { "name": "act-dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 3000 },
+    {
+      "name": "act-dev-machine",
+      "runtimeExecutable": "pwsh",
+      "runtimeArgs": ["-NoProfile", "-File", "C:\\Users\\coseung2\\Desktop\\Projects\\palm-analysis\\scripts\\with-infisical.ps1", "-ProjectId", "67ca8aac-24a4-47ec-b799-31209e64cb90", "-Environment", "dev", "-Executable", "npx", "next", "dev"],
+      "port": 3000
+    }
   ]
 }

@@ -1,9 +1,11 @@
 "use client";
 
 import { useActionState, useEffect, useId, useRef, useState, startTransition, type FormEvent } from "react";
-import { AUDIENCES, LINK_KINDS, LINK_LABEL, WORK_TYPE_LABEL, WORK_TYPES } from "@/lib/content/types";
+import { AUDIENCES, LINK_KINDS, LINK_LABEL, WORK_PURPOSE_HINT, WORK_PURPOSE_LABEL, WORK_PURPOSES, WORK_TYPE_LABEL, WORK_TYPES } from "@/lib/content/types";
 import { MAX_LINKS, type WorkFormState, type WorkFormValues } from "@/lib/content/form";
+import { Toast } from "./Toast";
 import { Button, Notice } from "./ui";
+import { VideoUpload } from "./VideoUpload";
 import f from "./form.module.css";
 
 type Props = {
@@ -13,21 +15,23 @@ type Props = {
   projects: { slug: string; name: string; year: number; term: string }[];
   currentThumbnail?: string | null;
   submitLabel: string;
+  simple?: boolean;
 };
 
 const TYPE_HINT: Record<string, string> = {
-  "web-tool": "브라우저에서 바로 쓰는 수업 도구",
-  "web-app": "기록·관리 기능이 있는 웹 서비스",
+  "web-app": "브라우저에서 바로 여는 웹 서비스",
   "mobile-app": "스토어에서 받는 앱",
   video: "YouTube 등에 올린 영상",
   material: "활동지, 슬라이드 등 수업 자료",
+  other: "앞의 넷에 해당하지 않는 형태",
 };
 
-export function WorkForm({ action, initial, mode, projects, currentThumbnail, submitLabel }: Props) {
+export function WorkForm({ action, initial, mode, projects, currentThumbnail, submitLabel, simple = false }: Props) {
   const [state, formAction, pending] = useActionState(action, { values: initial });
   const formRef = useRef<HTMLFormElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
   const [links, setLinks] = useState(() => (initial.links.length ? initial.links : [{ kind: "open", url: "" }]).map((l, i) => ({ ...l, id: i })));
+  const [linkMode, setLinkMode] = useState<"link" | "file">(initial.links[0]?.kind === "file" ? "file" : "link");
   const [title, setTitle] = useState(initial.title);
   const [summary, setSummary] = useState(initial.summary);
   const [preview, setPreview] = useState<string | null>(null);
@@ -73,6 +77,31 @@ export function WorkForm({ action, initial, mode, projects, currentThumbnail, su
   const thumbShown = preview ?? (removeThumb ? null : currentThumbnail);
   const uid = useId();
 
+  if (simple) return <form action={formAction} onSubmit={onSubmit} onChange={() => setDirty(true)} className={f.form}>
+    {errorCount > 0 && <div ref={summaryRef} tabIndex={-1}><Notice tone="danger">{Object.values(e).join(" ")}</Notice></div>}
+    {state.saved && <Toast signal={state}>저장했어요.</Toast>}
+    <input type="text" name="website" tabIndex={-1} autoComplete="off" className={f.honeypot} aria-hidden />
+    <div className={f.field}><label className={f.label} htmlFor={`${uid}-purpose`}>어디에 쓰나요?</label><select id={`${uid}-purpose`} name="purpose" className={f.select} defaultValue={initial.purpose} required><option value="" disabled>선택해 주세요</option>{WORK_PURPOSES.map(u => <option key={u} value={u}>{WORK_PURPOSE_LABEL[u]} — {WORK_PURPOSE_HINT[u]}</option>)}</select></div>
+    <div className={f.field}><label className={f.label} htmlFor={`${uid}-type`}>작품 형태</label><select id={`${uid}-type`} name="type" className={f.select} defaultValue={initial.type} required><option value="" disabled>선택해 주세요</option>{WORK_TYPES.map(type => <option key={type} value={type}>{WORK_TYPE_LABEL[type]}</option>)}</select></div>
+    <div className={f.field}><label className={f.label} htmlFor={`${uid}-title`}>제목</label><input id={`${uid}-title`} name="title" className={f.input} defaultValue={initial.title} required minLength={2} maxLength={40} /></div>
+    <div className={f.field}><label className={f.label} htmlFor={`${uid}-summary`}>한 줄 소개</label><input id={`${uid}-summary`} name="summary" className={f.input} defaultValue={initial.summary} required minLength={5} maxLength={80} /></div>
+    <div className={f.field}>
+      <span className={f.label}>작품 링크</span>
+      <div className={f.checks}>
+        <label className={f.check}><input type="radio" name="_link_mode" checked={linkMode === "link"} onChange={() => setLinkMode("link")} />링크로 열기</label>
+        <label className={f.check}><input type="radio" name="_link_mode" checked={linkMode === "file"} onChange={() => setLinkMode("file")} />영상 파일로 올리기</label>
+      </div>
+      {linkMode === "link" ? (
+        <input id={`${uid}-url`} name="link_url" type="url" className={f.input} defaultValue={initial.links[0]?.kind === "file" ? "" : initial.links[0]?.url ?? ""} placeholder="https://" required />
+      ) : (
+        <VideoUpload initialUrl={initial.links[0]?.kind === "file" ? initial.links[0]?.url : ""} />
+      )}
+    </div>
+    <div className={f.field}><label className={f.label} htmlFor={`${uid}-image`}>대표 이미지 <span className={f.hint}>(선택)</span></label><input id={`${uid}-image`} name="thumbnail" type="file" accept="image/jpeg,image/png,image/webp,image/gif" className={f.file} onChange={event => { const file = event.target.files?.[0]; setPreview(file ? URL.createObjectURL(file) : null); if (file) setRemoveThumb(false); }} /><p className={f.hint}>5MB 이하. 없으면 작품 링크의 대표 이미지를 가져오고, 그것도 없으면 기본 썸네일로 표시합니다.</p>{thumbShown && <div className={f.thumbPreview}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={thumbShown} alt="대표 이미지 미리보기" /></div>}{currentThumbnail && <label className={f.check}><input type="checkbox" name="remove_thumbnail" checked={removeThumb} onChange={event => setRemoveThumb(event.target.checked)} />기존 이미지 삭제</label>}</div>
+    <div className={f.field}><label className={f.label} htmlFor={`${uid}-body`}>상세 설명 <span className={f.hint}>(선택)</span></label><textarea id={`${uid}-body`} name="body" className={f.textarea} rows={4} maxLength={5000} defaultValue={initial.body} placeholder="작품 소개나 사용 방법을 적어 주세요." /></div>
+    <Button type="submit" variant="primary" disabled={pending}>{pending ? "저장하는 중…" : submitLabel}</Button>
+  </form>;
+
   return (
     // action은 JS가 아직 로드되지 않았을 때의 POST 대비책. JS가 있으면 onSubmit이 가로챈다(React는 defaultPrevented면 action을 다시 부르지 않는다).
     <form ref={formRef} action={formAction} onSubmit={onSubmit} onChange={() => setDirty(true)} className={f.form}>
@@ -84,9 +113,9 @@ export function WorkForm({ action, initial, mode, projects, currentThumbnail, su
         </div>
       )}
       {state.saved && (
-        <Notice tone="success">
+        <Toast signal={state}>
           <strong>저장했어요.</strong> {mode === "edit" ? "변경 내용이 반영되었습니다." : ""}
-        </Notice>
+        </Toast>
       )}
 
       <input type="text" name="website" tabIndex={-1} autoComplete="off" className={f.honeypot} aria-hidden />
@@ -95,9 +124,21 @@ export function WorkForm({ action, initial, mode, projects, currentThumbnail, su
         <legend className={f.legend}>
           <span className="t-eyebrow">01</span> 어떤 작품인가요?
         </legend>
-        <div className={f.typeGrid} role="radiogroup" aria-describedby={described("type")}>
+        <p className={f.label} id="purpose-label">어디에 쓰나요?</p>
+        <div className={f.typeGrid} role="radiogroup" aria-labelledby="purpose-label" aria-describedby={described("purpose")}>
+          {WORK_PURPOSES.map((u) => (
+            <label key={u} className={f.typeOption} data-purpose={u}>
+              <input type="radio" name="purpose" value={u} defaultChecked={initial.purpose === u} required />
+              <span className={f.typeName}>{WORK_PURPOSE_LABEL[u]}</span>
+              <span className={f.typeHint}>{WORK_PURPOSE_HINT[u]}</span>
+            </label>
+          ))}
+        </div>
+        {err("purpose")}
+        <p className={f.label} id="type-label">어떤 형태인가요?</p>
+        <div className={f.typeGrid} role="radiogroup" aria-labelledby="type-label" aria-describedby={described("type")}>
           {WORK_TYPES.map((t) => (
-            <label key={t} className={f.typeOption} data-type={t}>
+            <label key={t} className={f.typeOption}>
               <input type="radio" name="type" value={t} defaultChecked={initial.type === t} required />
               <span className={f.typeName}>{WORK_TYPE_LABEL[t]}</span>
               <span className={f.typeHint}>{TYPE_HINT[t]}</span>
@@ -128,7 +169,7 @@ export function WorkForm({ action, initial, mode, projects, currentThumbnail, su
               {summary.length}/80
             </span>
           </label>
-          <input id={`${uid}-summary`} name="summary" className={f.input} defaultValue={initial.summary} required minLength={5} maxLength={80} placeholder="예: 피자를 나누며 분수의 크기를 비교하는 교실용 웹 도구" onChange={(ev) => setSummary(ev.target.value)} aria-invalid={!!e.summary} aria-describedby={described("summary")} />
+          <input id={`${uid}-summary`} name="summary" className={f.input} defaultValue={initial.summary} required minLength={5} maxLength={80} placeholder="예: 피자를 나누며 분수의 크기를 비교하는 교실용 웹앱" onChange={(ev) => setSummary(ev.target.value)} aria-invalid={!!e.summary} aria-describedby={described("summary")} />
           {err("summary")}
         </div>
         <div className={f.field}>
@@ -148,7 +189,7 @@ export function WorkForm({ action, initial, mode, projects, currentThumbnail, su
           <span className="t-eyebrow">03</span> 작품 링크
         </legend>
         <p className={f.hint} id="links-hint">
-          첫 번째 링크가 카드의 「바로 열기」 버튼이 됩니다. 앱은 스토어 링크를, 영상은 YouTube 링크를 넣으면 상세 페이지에서 바로 재생돼요.
+          첫 번째 링크가 카드의 「바로 열기」 버튼이 됩니다. 앱은 스토어 링크를, 영상은 YouTube 링크를 넣거나 종류를 「영상 파일」로 바꿔 직접 올릴 수 있어요.
         </p>
         <div className={f.links}>
           {links.map((l, i) => (
@@ -156,17 +197,32 @@ export function WorkForm({ action, initial, mode, projects, currentThumbnail, su
               <label className="visually-hidden" htmlFor={`${uid}-lk-${l.id}`}>
                 링크 {i + 1} 종류
               </label>
-              <select id={`${uid}-lk-${l.id}`} name="link_kind" defaultValue={l.kind} className={f.select}>
+              <select
+                id={`${uid}-lk-${l.id}`}
+                name="link_kind"
+                value={l.kind}
+                className={f.select}
+                onChange={(ev) => {
+                  const kind = ev.target.value;
+                  setLinks((ls) => ls.map((x) => (x.id === l.id ? { ...x, kind, url: "" } : x)));
+                }}
+              >
                 {LINK_KINDS.map((k) => (
                   <option key={k} value={k}>
                     {LINK_LABEL[k]}
                   </option>
                 ))}
               </select>
-              <label className="visually-hidden" htmlFor={`${uid}-lu-${l.id}`}>
-                링크 {i + 1} 주소
-              </label>
-              <input id={`${uid}-lu-${l.id}`} name="link_url" type="url" inputMode="url" defaultValue={l.url} placeholder="https://" className={f.input} required={i === 0} aria-invalid={!!e.links} aria-describedby={described("links", true)} />
+              {l.kind === "file" ? (
+                <VideoUpload initialUrl={l.url} />
+              ) : (
+                <>
+                  <label className="visually-hidden" htmlFor={`${uid}-lu-${l.id}`}>
+                    링크 {i + 1} 주소
+                  </label>
+                  <input id={`${uid}-lu-${l.id}`} name="link_url" type="url" inputMode="url" defaultValue={l.url} placeholder="https://" className={f.input} required={i === 0} aria-invalid={!!e.links} aria-describedby={described("links", true)} />
+                </>
+              )}
               {links.length > 1 && (
                 <button type="button" className={f.iconBtn} aria-label={`링크 ${i + 1} 삭제`} onClick={() => setLinks((ls) => ls.filter((x) => x.id !== l.id))}>
                   ×
@@ -306,7 +362,7 @@ export function WorkForm({ action, initial, mode, projects, currentThumbnail, su
         <Button type="submit" variant="primary" disabled={pending}>
           {pending ? "저장하는 중…" : submitLabel}
         </Button>
-        {mode === "create" && <p className={f.hint}>제출하면 이 작품을 고칠 수 있는 개인 수정 링크를 드려요.</p>}
+        {mode === "create" && <p className={f.hint}>제출한 작품은 마이페이지에서 관리할 수 있어요.</p>}
       </div>
     </form>
   );

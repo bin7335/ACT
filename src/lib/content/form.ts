@@ -1,11 +1,13 @@
 import { z } from "zod";
-import { AUDIENCES, LINK_KINDS, WORK_TYPES } from "./types";
+import { isVideoPath } from "@/lib/video";
+import { AUDIENCES, LINK_KINDS, WORK_PURPOSES, WORK_TYPES } from "./types";
 
 // 작품 등록/수정 폼 — 클라이언트(폼 상태)와 서버(검증)가 함께 쓴다.
 
 export const MAX_LINKS = 4;
 
 export type WorkFormValues = {
+  purpose: string;
   type: string;
   title: string;
   summary: string;
@@ -26,6 +28,7 @@ export type WorkFormState = {
 };
 
 export const emptyValues: WorkFormValues = {
+  purpose: "",
   type: "",
   title: "",
   summary: "",
@@ -45,29 +48,34 @@ const list = (s: string) =>
     .map((x) => x.trim())
     .filter(Boolean);
 
-const httpUrl = z
-  .string()
-  .trim()
-  .max(500, "주소가 너무 길어요.")
-  .refine((v) => {
-    try {
-      const u = new URL(v);
-      return u.protocol === "https:" || u.protocol === "http:";
-    } catch {
-      return false;
+// 영상 파일(kind: file)은 서버가 만든 내부 경로만, 나머지는 http(s) 전체 주소만 받는다.
+const linkSchema = z
+  .object({ kind: z.enum(LINK_KINDS), url: z.string().trim().max(500, "주소가 너무 길어요.") })
+  .superRefine((link, ctx) => {
+    if (link.kind === "file") {
+      if (!isVideoPath(link.url)) ctx.addIssue({ code: "custom", path: ["url"], message: "영상 파일을 올려 주세요." });
+      return;
     }
-  }, "http:// 또는 https://로 시작하는 전체 주소를 넣어 주세요.");
+    try {
+      const u = new URL(link.url);
+      if (u.protocol === "https:" || u.protocol === "http:") return;
+    } catch {
+      // 아래에서 안내 문구를 단다.
+    }
+    ctx.addIssue({ code: "custom", path: ["url"], message: "http:// 또는 https://로 시작하는 전체 주소를 넣어 주세요." });
+  });
 
 export const workSchema = z.object({
-  type: z.enum(WORK_TYPES, { error: "작품 유형을 골라 주세요." }),
+  purpose: z.enum(WORK_PURPOSES, { error: "어디에 쓰는 작품인지 골라 주세요." }),
+  type: z.enum(WORK_TYPES, { error: "작품 형태를 골라 주세요." }),
   title: z.string().trim().min(2, "제목을 2자 이상 써 주세요.").max(40, "제목은 40자 이내로 써 주세요."),
   summary: z.string().trim().min(5, "한 줄 설명을 써 주세요.").max(80, "한 줄 설명은 80자 이내로 써 주세요."),
   body: z.string().trim().max(5000, "설명은 5000자 이내로 써 주세요."),
   links: z
-    .array(z.object({ kind: z.enum(LINK_KINDS), url: httpUrl }))
-    .min(1, "작품을 열 수 있는 링크를 하나 이상 넣어 주세요.")
+    .array(linkSchema)
+    .min(1, "작품을 열 수 있는 링크나 영상 파일을 하나 이상 넣어 주세요.")
     .max(MAX_LINKS),
-  audience: z.array(z.enum(AUDIENCES)).min(1, "대상을 하나 이상 골라 주세요."),
+  audience: z.array(z.enum(AUDIENCES)),
   subjects: z.array(z.string().max(20, "교과·영역 이름은 20자 이내로 써 주세요.")).max(5, "교과·영역은 5개까지 넣을 수 있어요."),
   makers: z.array(z.string().max(30)).min(1, "만든 사람 이름을 넣어 주세요.").max(6, "만든 사람은 6명까지 넣을 수 있어요."),
   project: z.string().trim().max(80),
@@ -82,6 +90,7 @@ export function readWorkForm(fd: FormData): WorkFormValues {
   const kinds = fd.getAll("link_kind").map(String);
   const urls = fd.getAll("link_url").map(String);
   return {
+    purpose: str("purpose"),
     type: str("type"),
     title: str("title"),
     summary: str("summary"),
@@ -93,6 +102,30 @@ export function readWorkForm(fd: FormData): WorkFormValues {
     project: str("project"),
     thumbnailAlt: str("thumbnail_alt"),
     contactEmail: str("contact_email"),
+  };
+}
+
+export function readMemberWorkForm(fd: FormData, name: string, existing?: WorkFormValues): WorkFormValues {
+  const values = readWorkForm(fd);
+  const url = String(fd.get("link_url") ?? "").trim();
+  let kind = "open";
+  if (isVideoPath(url)) kind = "file";
+  else
+    try {
+      const host = new URL(url).hostname.toLowerCase();
+      if (host === "youtu.be" || host === "youtube.com" || host.endsWith(".youtube.com")) kind = "youtube";
+      else if (host === "apps.apple.com") kind = "store-ios";
+      else if (host === "play.google.com") kind = "store-android";
+    } catch { /* URL errors are reported by validateWork. */ }
+  return {
+    ...values,
+    links: [{ kind, url }, ...(existing?.links.slice(1) ?? [])],
+    makers: existing?.makers || name,
+    audience: existing?.audience ?? [],
+    subjects: existing?.subjects ?? "",
+    project: existing?.project ?? "",
+    thumbnailAlt: existing?.thumbnailAlt ?? "",
+    contactEmail: existing?.contactEmail ?? "",
   };
 }
 
@@ -113,6 +146,7 @@ export function validateWork(values: WorkFormValues) {
 }
 
 export function valuesFromWork(w: {
+  purpose: string;
   type: string;
   title: string;
   summary: string;
@@ -126,6 +160,7 @@ export function valuesFromWork(w: {
   contactEmail?: string | null;
 }): WorkFormValues {
   return {
+    purpose: w.purpose,
     type: w.type,
     title: w.title,
     summary: w.summary,

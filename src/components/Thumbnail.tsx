@@ -1,22 +1,22 @@
-import type { WorkType } from "@/lib/content/types";
+import type { WorkPurpose } from "@/lib/content/types";
 import s from "./WorkCard.module.css";
 
 /**
- * 16:10 썸네일. 이미지가 없으면 유형색 위에 제목을 얹은 타이포그래픽 썸네일을 그린다.
+ * 16:10 썸네일. 이미지가 없으면 용도색 위에 제목을 얹은 타이포그래픽 썸네일을 그린다.
  * 업로드 이미지는 /media/{id}.webp (1280w)와 {id}-640.webp 두 가지 크기로 저장된다.
  */
 export function Thumbnail({
   src,
   alt,
   title,
-  type,
+  purpose,
   priority,
   sizes = "(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 282px",
 }: {
   src: string | null;
   alt: string | null;
   title: string;
-  type: WorkType;
+  purpose: WorkPurpose;
   priority?: boolean;
   sizes?: string;
 }) {
@@ -39,7 +39,7 @@ export function Thumbnail({
     );
   }
   return (
-    <div className={s.thumbFallback} data-type={type} aria-hidden>
+    <div className={s.thumbFallback} data-purpose={purpose} aria-hidden>
       <span className={s.thumbFallbackTitle}>{title}</span>
     </div>
   );

@@ -19,24 +19,33 @@ import s from "../../admin.module.css";
 
 export const metadata: Metadata = { title: "작품 검수", robots: { index: false, follow: false } };
 
+const SAVED: Record<string, string> = {
+  published: "작품을 공개했어요. 작품 목록과 홈에 바로 반영됩니다.",
+  hidden: "작품을 숨겼어요. 공개 목록에서 내려갑니다.",
+  review: "검수 대기로 돌렸어요. 공개 목록에서 내려갑니다.",
+};
+
 export default async function AdminWorkPage(props: PageProps<"/admin/works/[slug]">) {
   await requireAdmin();
   const { slug } = await props.params;
+  const sp = await props.searchParams;
   const work = await getAnyWork(slug);
   if (!work) notFound();
   const projects = await listProjectOptions();
+  const saved = typeof sp.saved === "string" ? SAVED[sp.saved] : undefined;
 
   return (
     <div className={`container ${p.page}`}>
       <Link href="/admin" className={s.headLink}>
         ← 목록으로
       </Link>
-      <SectionHeader eyebrow={`REVIEW / ${work.slug}`} title={work.title} description={work.summary} />
+      <SectionHeader title={work.title} description={work.summary} />
+      {saved && <Notice tone="success">{saved}</Notice>}
 
       <div className={s.reviewGrid}>
         <div className={s.reviewMain}>
           <div className={s.preview}>
-            <Thumbnail src={work.thumbnail} alt={work.thumbnailAlt} title={work.title} type={work.type} sizes="640px" />
+            <Thumbnail src={work.thumbnail} alt={work.thumbnailAlt} title={work.title} purpose={work.purpose} sizes="640px" />
           </div>
           <ul className={s.links}>
             {work.links.map((l) => (

@@ -2,8 +2,24 @@ import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans_KR } from "next/font/google";
 import Link from "next/link";
 import { Suspense } from "react";
-import { TopNav, TopNavView } from "@/components/TopNav";
+import { AdminTab, ProjectsTab, TopNav, TopNavView } from "@/components/TopNav";
 import { site } from "@/lib/site";
+import { currentMember } from "@/lib/auth";
+import { isAdmin, projectAccess } from "@/lib/admin";
+import { AccountControl } from "@/components/AccountControl";
+
+async function HeaderAccount() {
+  const member = await currentMember();
+  return <AccountControl member={member ? { name: member.name, username: member.username, isAdmin: member.isAdmin } : null} />;
+}
+
+async function HeaderProjectsTab() {
+  return <ProjectsTab show={(await projectAccess()).allowed} />;
+}
+
+async function HeaderAdminTab() {
+  return <AdminTab isAdmin={await isAdmin()} />;
+}
 import "./globals.css";
 import s from "./layout.module.css";
 
@@ -36,16 +52,22 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children, auth }: LayoutProps<"/">) {
   return (
     <html lang="ko" className={`${sans.variable} ${mono.variable}`}>
       <body className={s.body}>
         <Suspense fallback={<TopNavView siteName={site.name} pathname="" />}>
-          <TopNav siteName={site.name} />
+          <TopNav
+            siteName={site.name}
+            projects={<Suspense fallback={null}><HeaderProjectsTab /></Suspense>}
+            admin={<Suspense fallback={null}><HeaderAdminTab /></Suspense>}
+            account={<Suspense fallback={<span aria-label="계정 확인 중" style={{ width: 56 }} />}><HeaderAccount /></Suspense>}
+          />
         </Suspense>
         <main id="main" className={s.main}>
           {children}
         </main>
+        {auth}
         <footer className={s.footer}>
           <div className={`container ${s.footerInner}`}>
             <div>
@@ -57,7 +79,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <nav aria-label="하단 메뉴" className={s.footerNav}>
               <Link href="/works">작품</Link>
               <Link href="/makers">제작자</Link>
-              <Link href="/projects">연구회 프로젝트</Link>
               <Link href="/about">소개</Link>
               <Link href="/submit">작품 올리기</Link>
             </nav>

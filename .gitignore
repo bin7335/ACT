@@ -42,3 +42,8 @@ next-env.d.ts
 
 # app data (SQLite DB, uploads)
 /data
+
+# cloudflare
+/.open-next/
+/.wrangler/
+.dev.vars

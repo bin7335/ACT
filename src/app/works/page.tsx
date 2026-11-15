@@ -5,15 +5,24 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { Chip, ButtonLink } from "@/components/ui";
 import { WorkGrid, WorkGridSkeleton } from "@/components/WorkCard";
 import p from "@/components/page.module.css";
-import { allSubjects, getArchive, parseArchiveQuery, type ArchiveQuery } from "@/lib/content/queries";
-import { AUDIENCES, WORK_TYPE_LABEL, WORK_TYPES } from "@/lib/content/types";
+import { allSubjects, DEFAULT_SORT, getArchive, parseArchiveQuery, type ArchiveQuery, type ArchiveSort } from "@/lib/content/queries";
+import { reactionProps } from "@/lib/content/stats";
+import { AUDIENCES, WORK_PURPOSE_LABEL, WORK_PURPOSES, WORK_TYPE_LABEL, WORK_TYPES } from "@/lib/content/types";
 import { withParams } from "@/lib/format";
+import { FilterSelects } from "./FilterSelects";
 
 export const metadata: Metadata = {
   title: "작품",
-  description: "선생님들이 만든 웹 도구, 웹앱, 모바일 앱, 영상, 수업 자료를 유형·대상·교과로 찾아보세요.",
+  description: "선생님들이 만든 수업 도구, 업무 도구, 교실 놀이, 기타 영상과 작품을 용도·형태·대상·교과로 찾아보세요.",
   alternates: { canonical: "/works" },
 };
+
+const SORTS: { value: ArchiveSort; label: string }[] = [
+  { value: "likes", label: "좋아요순" },
+  { value: "bookmarks", label: "북마크순" },
+  { value: "new", label: "최신순" },
+  { value: "title", label: "이름순" },
+];
 
 export default function WorksPage(props: PageProps<"/works">) {
   return (
@@ -28,7 +37,7 @@ export default function WorksPage(props: PageProps<"/works">) {
 function ArchiveFallback() {
   return (
     <>
-      <SectionHeader eyebrow="WORK ARCHIVE" title="선생님들이 만든 작품" action={<ButtonLink href="/submit" variant="primary">작품 올리기</ButtonLink>} />
+      <SectionHeader title="선생님들이 만든 작품" action={<ButtonLink href="/submit" variant="primary">작품 올리기</ButtonLink>} />
       <WorkGridSkeleton />
     </>
   );
@@ -37,21 +46,22 @@ function ArchiveFallback() {
 async function Archive({ searchParams }: { searchParams: PageProps<"/works">["searchParams"] }) {
   const query = parseArchiveQuery(await searchParams);
   const [result, subjects] = await Promise.all([getArchive(query), allSubjects()]);
+  const sort = query.sort ?? DEFAULT_SORT;
   const current: Record<string, string | undefined> = {
+    use: query.purpose,
     type: query.type,
     audience: query.audience,
     subject: query.subject,
     q: query.q,
-    sort: query.sort === "title" ? "title" : undefined,
+    sort: sort === DEFAULT_SORT ? undefined : sort,
   };
   const href = (patch: Record<string, string | undefined>) => withParams("/works", current, patch);
-  const filtered = !!(query.type || query.audience || query.subject || query.q);
-  const typeTotal = Object.values(result.facets.type).reduce((a, b) => a + b, 0);
+  const filtered = !!(query.purpose || query.type || query.audience || query.subject || query.q);
+  const purposeTotal = Object.values(result.facets.purpose).reduce((a, b) => a + b, 0);
 
   return (
     <>
       <SectionHeader
-        eyebrow={`WORK ARCHIVE / ${result.facets.all}`}
         title="선생님들이 만든 작품"
         action={
           <ButtonLink href="/submit" variant="primary">
@@ -62,10 +72,10 @@ async function Archive({ searchParams }: { searchParams: PageProps<"/works">["se
 
       <div className={p.filters}>
         <div className={p.filterTop}>
-          <nav aria-label="유형" className={p.row}>
-            <Chip href={href({ type: undefined })} label="전체" count={typeTotal} selected={!query.type} />
-            {WORK_TYPES.map((t) => (
-              <Chip key={t} href={href({ type: t })} label={WORK_TYPE_LABEL[t]} count={result.facets.type[t] ?? 0} selected={query.type === t} />
+          <nav aria-label="용도" className={p.row}>
+            <Chip href={href({ use: undefined })} label="전체" count={purposeTotal} selected={!query.purpose} />
+            {WORK_PURPOSES.map((u) => (
+              <Chip key={u} href={href({ use: u })} label={WORK_PURPOSE_LABEL[u]} count={result.facets.purpose[u] ?? 0} selected={query.purpose === u} />
             ))}
           </nav>
           <form action="/works" role="search" className={p.search}>
@@ -81,20 +91,14 @@ async function Archive({ searchParams }: { searchParams: PageProps<"/works">["se
             <button className={p.searchBtn}>검색</button>
           </form>
         </div>
-        <nav aria-label="대상" className={p.row}>
-          <Chip href={href({ audience: undefined })} label="모든 대상" selected={!query.audience} />
-          {AUDIENCES.map((a) => (
-            <Chip key={a} href={href({ audience: a })} label={a} count={result.facets.audience[a] ?? 0} selected={query.audience === a} />
-          ))}
-        </nav>
-        {subjects.length > 0 && (
-          <nav aria-label="교과" className={p.row}>
-            <Chip href={href({ subject: undefined })} label="모든 교과" selected={!query.subject} />
-            {subjects.map((sub) => (
-              <Chip key={sub} href={href({ subject: sub })} label={sub} count={result.facets.subject[sub] ?? 0} selected={query.subject === sub} />
-            ))}
-          </nav>
-        )}
+        <FilterSelects
+          keep={{ use: query.purpose, q: query.q, sort: current.sort }}
+          filters={[
+            { name: "type", label: "형태", all: "모든 형태", value: query.type, options: WORK_TYPES.map((t) => ({ value: t, label: WORK_TYPE_LABEL[t], count: result.facets.type[t] ?? 0 })) },
+            { name: "audience", label: "대상", all: "모든 대상", value: query.audience, options: AUDIENCES.map((a) => ({ value: a, label: a, count: result.facets.audience[a] ?? 0 })) },
+            ...(subjects.length ? [{ name: "subject", label: "교과", all: "모든 교과", value: query.subject, options: subjects.map((sub) => ({ value: sub, label: sub, count: result.facets.subject[sub] ?? 0 })) }] : []),
+          ]}
+        />
       </div>
 
       <div className={p.toolbar}>
@@ -110,17 +114,16 @@ async function Archive({ searchParams }: { searchParams: PageProps<"/works">["se
           )}
         </p>
         <div className={p.toolbarLinks}>
-          <Link href={href({ sort: undefined })} aria-current={query.sort !== "title" ? "true" : undefined} scroll={false}>
-            최신순
-          </Link>
-          <Link href={href({ sort: "title" })} aria-current={query.sort === "title" ? "true" : undefined} scroll={false}>
-            이름순
-          </Link>
+          {SORTS.map((o) => (
+            <Link key={o.value} href={href({ sort: o.value === DEFAULT_SORT ? undefined : o.value })} aria-current={sort === o.value ? "true" : undefined} scroll={false}>
+              {o.label}
+            </Link>
+          ))}
         </div>
       </div>
 
       {result.items.length ? (
-        <WorkGrid works={result.items} priorityCount={4} />
+        <WorkGrid works={result.items} priorityCount={4} reactions={await reactionProps(result.items.map((w) => w.slug))} />
       ) : (
         <Empty query={query} />
       )}

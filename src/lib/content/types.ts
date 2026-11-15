@@ -1,20 +1,39 @@
 // 콘텐츠 모델 — CONSTITUTION.md §4
 
-export const WORK_TYPES = ["web-tool", "web-app", "mobile-app", "video", "material"] as const;
+// 대분류: 어디에 쓰는가. 작품마다 하나.
+export const WORK_PURPOSES = ["class", "work", "play", "other"] as const;
+export type WorkPurpose = (typeof WORK_PURPOSES)[number];
+
+export const WORK_PURPOSE_LABEL: Record<WorkPurpose, string> = {
+  class: "수업 도구",
+  work: "업무 도구",
+  play: "교실 놀이",
+  other: "기타",
+};
+
+export const WORK_PURPOSE_HINT: Record<WorkPurpose, string> = {
+  class: "수업 시간에 학생과 함께 쓰는 도구와 자료",
+  work: "기록·평가·행정 등 선생님 업무를 돕는 도구",
+  play: "게임, 레크리에이션, 자투리 시간 활동",
+  other: "앞의 셋에 딱 들어가지 않는 그 밖의 작품",
+};
+
+// 소분류: 어떤 형태인가.
+export const WORK_TYPES = ["web-app", "mobile-app", "video", "material", "other"] as const;
 export type WorkType = (typeof WORK_TYPES)[number];
 
 export const WORK_TYPE_LABEL: Record<WorkType, string> = {
-  "web-tool": "웹 도구",
   "web-app": "웹앱",
   "mobile-app": "모바일 앱",
   video: "영상",
   material: "수업 자료",
+  other: "기타",
 };
 
-export const AUDIENCES = ["유아", "초등 저", "초등 중", "초등 고", "중등", "교사 업무"] as const;
+export const AUDIENCES = ["유아", "초등 저", "초등 중", "초등 고", "중등"] as const;
 export type Audience = (typeof AUDIENCES)[number];
 
-export const LINK_KINDS = ["open", "store-ios", "store-android", "youtube", "source"] as const;
+export const LINK_KINDS = ["open", "store-ios", "store-android", "youtube", "source", "file"] as const;
 export type LinkKind = (typeof LINK_KINDS)[number];
 
 export const LINK_LABEL: Record<LinkKind, string> = {
@@ -23,6 +42,7 @@ export const LINK_LABEL: Record<LinkKind, string> = {
   "store-android": "Google Play",
   youtube: "YouTube에서 보기",
   source: "소스 코드",
+  file: "영상 파일",
 };
 
 export type WorkLink = { kind: LinkKind; url: string };
@@ -40,6 +60,7 @@ export type MakerRef = { slug: string; name: string };
 
 export type WorkSummary = {
   slug: string;
+  purpose: WorkPurpose;
   type: WorkType;
   title: string;
   summary: string;
@@ -53,6 +74,9 @@ export type WorkSummary = {
   publishedAt: Date | null;
   updatedAt: Date;
   linkBroken: boolean;
+  viewCount: number;
+  likeCount: number;
+  bookmarkCount: number;
 };
 
 export type WorkDetail = WorkSummary & {
@@ -70,6 +94,7 @@ export type WorkDetail = WorkSummary & {
 // 개발 시드 전용 입력 형식
 export type Work = {
   slug: string;
+  purpose: WorkPurpose;
   type: WorkType;
   title: string;
   summary: string;
