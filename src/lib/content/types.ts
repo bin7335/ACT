@@ -33,7 +33,7 @@ export const WORK_TYPE_LABEL: Record<WorkType, string> = {
 export const AUDIENCES = ["유아", "초등 저", "초등 중", "초등 고", "중등"] as const;
 export type Audience = (typeof AUDIENCES)[number];
 
-export const LINK_KINDS = ["open", "store-ios", "store-android", "youtube", "source"] as const;
+export const LINK_KINDS = ["open", "store-ios", "store-android", "youtube", "source", "file"] as const;
 export type LinkKind = (typeof LINK_KINDS)[number];
 
 export const LINK_LABEL: Record<LinkKind, string> = {
@@ -42,6 +42,7 @@ export const LINK_LABEL: Record<LinkKind, string> = {
   "store-android": "Google Play",
   youtube: "YouTube에서 보기",
   source: "소스 코드",
+  file: "영상 파일",
 };
 
 export type WorkLink = { kind: LinkKind; url: string };

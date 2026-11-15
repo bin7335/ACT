@@ -8,7 +8,7 @@ export type MemberRow = { id: string; name: string; username: string | null; ema
 const columns = { id: schema.member.id, name: schema.member.name, username: schema.member.username, email: schema.googleIdentity.email, isAdmin: schema.member.isAdmin, isResearch: schema.member.isResearch };
 
 // 계정 설정은 현재 운영진, 관리자 화면은 최근 가입 회원 30명을 기본으로 보여 준다.
-export function searchMembers(query: string, scope: "admins" | "all" = "admins"): MemberRow[] {
+export async function searchMembers(query: string, scope: "admins" | "all" = "admins"): Promise<MemberRow[]> {
   const q = query.trim().toLowerCase().slice(0, 60);
   const base = db.select(columns).from(schema.member).leftJoin(schema.googleIdentity, eq(schema.googleIdentity.memberId, schema.member.id));
   if (!q) return scope === "all"
@@ -20,23 +20,23 @@ export function searchMembers(query: string, scope: "admins" | "all" = "admins")
 }
 
 /** 관리자 화면용: 가입자 전체를 10명씩 보여 준다(최근 가입 먼저). */
-export function listMembers(page: number, perPage = 10) {
-  const total = db.select({ n: sql<number>`count(*)` }).from(schema.member).get()?.n ?? 0;
+export async function listMembers(page: number, perPage = 10) {
+  const total = (await db.select({ n: sql<number>`count(*)` }).from(schema.member).get())?.n ?? 0;
   const pageCount = Math.max(1, Math.ceil(total / perPage));
   const current = Math.min(Math.max(1, Math.floor(page) || 1), pageCount);
-  const items = db.select(columns).from(schema.member).leftJoin(schema.googleIdentity, eq(schema.googleIdentity.memberId, schema.member.id))
+  const items = await db.select(columns).from(schema.member).leftJoin(schema.googleIdentity, eq(schema.googleIdentity.memberId, schema.member.id))
     .orderBy(desc(schema.member.createdAt), asc(schema.member.id))
     .limit(perPage).offset((current - 1) * perPage).all();
   return { items, total, page: current, pageCount };
 }
 
 /** 운영진 권한만 켜고 끈다(연구회회원 여부는 그대로 둔다). */
-export function setMemberAdmin(id: string, isAdmin: boolean) {
+export async function setMemberAdmin(id: string, isAdmin: boolean) {
   return db.update(schema.member).set({ isAdmin }).where(eq(schema.member.id, id)).returning({ id: schema.member.id }).get();
 }
 
 /** 역할을 하나로 정한다. 관리자는 연구회 프로젝트 권한을 포함하므로 연구회 표시는 지운다. */
-export function setMemberRole(id: string, role: Role) {
+export async function setMemberRole(id: string, role: Role) {
   return db.update(schema.member).set({ isAdmin: role === "admin", isResearch: role === "research" })
     .where(eq(schema.member.id, id)).returning({ id: schema.member.id }).get();
 }

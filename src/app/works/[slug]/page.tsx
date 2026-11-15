@@ -16,6 +16,7 @@ import { projectAccess } from "@/lib/admin";
 import { formatDate } from "@/lib/format";
 import { youtubeId } from "@/lib/remote-image";
 import { site } from "@/lib/site";
+import { VIDEO_MIME, videoExtensionOf } from "@/lib/video";
 import s from "./work.module.css";
 
 export async function generateMetadata(props: PageProps<"/works/[slug]">): Promise<Metadata> {
@@ -40,6 +41,8 @@ export default async function WorkPage(props: PageProps<"/works/[slug]">) {
   const showProject = !!work.project && (await projectAccess()).allowed;
   const related = await getRelatedWorks(work);
   const yt = work.links.map((l) => (l.kind === "youtube" ? youtubeId(l.url) : null)).find(Boolean);
+  const video = work.links.find((l) => l.kind === "file");
+  const videoExt = video ? videoExtensionOf(video.url) : null;
   const [primary, ...rest] = work.links;
 
   return (
@@ -55,7 +58,11 @@ export default async function WorkPage(props: PageProps<"/works/[slug]">) {
       <div className={s.layout}>
         <div className={s.main}>
           <div className={s.media}>
-            {yt ? (
+            {video && videoExt ? (
+              <video controls preload="metadata" playsInline poster={work.thumbnail ?? undefined}>
+                <source src={video.url} type={VIDEO_MIME[videoExt]} />
+              </video>
+            ) : yt ? (
               <iframe
                 src={`https://www.youtube-nocookie.com/embed/${yt}`}
                 title={`${work.title} 영상`}
@@ -177,7 +184,7 @@ export default async function WorkPage(props: PageProps<"/works/[slug]">) {
 }
 
 function PrimaryLink({ link }: { link: WorkLink }) {
-  const label = link.kind === "open" ? "바로 열기" : LINK_LABEL[link.kind];
+  const label = link.kind === "open" ? "바로 열기" : link.kind === "file" ? "영상 열기" : LINK_LABEL[link.kind];
   let host = "";
   try {
     host = new URL(link.url).hostname.replace(/^www\./, "");

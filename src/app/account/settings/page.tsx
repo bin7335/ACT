@@ -22,7 +22,7 @@ export default function SettingsPage(props: PageProps<"/account/settings">) {
 async function Content({ searchParams }: PageProps<"/account/settings">) {
   const member = await requireMember("/account/settings");
   const params = await searchParams;
-  const google = db.select().from(schema.googleIdentity).where(eq(schema.googleIdentity.memberId, member.id)).get();
+  const google = await db.select().from(schema.googleIdentity).where(eq(schema.googleIdentity.memberId, member.id)).get();
   return <>
     <SectionHeader title={member.name} description={member.username ? `@${member.username}` : "Google 계정으로 로그인했어요."} />
     <AccountNav current="settings" isAdmin={member.isAdmin} />
@@ -49,7 +49,7 @@ async function Content({ searchParams }: PageProps<"/account/settings">) {
           </>}
         </div>
       </section>
-      <ApiTokens tokens={listApiTokens(member.id)} />
+      <ApiTokens tokens={await listApiTokens(member.id)} />
       {member.isAdmin && <AdminMembers selfId={member.id} query={typeof params.q === "string" ? params.q : ""} result={typeof params.admin === "string" ? params.admin : undefined} />}
       <section className={s.setting} aria-labelledby="session-heading">
         <div className={s.settingHead}><h2 id="session-heading">로그아웃</h2><p>공용 컴퓨터라면 사용 후 꼭 로그아웃해 주세요.</p></div>

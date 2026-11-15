@@ -22,9 +22,10 @@ export async function currentMember() {
   await connection();
   const hash = await sessionHash();
   if (!hash) return null;
-  return db.select({ id: schema.member.id, name: schema.member.name, username: schema.member.username, isAdmin: schema.member.isAdmin, isResearch: schema.member.isResearch })
+  const row = await db.select({ id: schema.member.id, name: schema.member.name, username: schema.member.username, isAdmin: schema.member.isAdmin, isResearch: schema.member.isResearch })
     .from(schema.memberSession).innerJoin(schema.member, eq(schema.memberSession.memberId, schema.member.id))
-    .where(and(eq(schema.memberSession.tokenHash, hash), gt(schema.memberSession.expiresAt, new Date()))).get() ?? null;
+    .where(and(eq(schema.memberSession.tokenHash, hash), gt(schema.memberSession.expiresAt, new Date()))).get();
+  return row ?? null;
 }
 
 export async function requireMember(next = "/account") {
@@ -35,7 +36,7 @@ export async function requireMember(next = "/account") {
 
 export async function endMemberSession() {
   const hash = await sessionHash();
-  if (hash) db.delete(schema.memberSession).where(eq(schema.memberSession.tokenHash, hash)).run();
+  if (hash) await db.delete(schema.memberSession).where(eq(schema.memberSession.tokenHash, hash)).run();
   const jar = await cookies();
   jar.delete(SESSION_COOKIE);
   jar.delete(OAUTH_COOKIE);
@@ -44,8 +45,10 @@ export async function endMemberSession() {
 export async function startMemberSession(memberId: string) {
   await endMemberSession();
   const token = randomBytes(32).toString("base64url");
-  db.delete(schema.memberSession).where(lt(schema.memberSession.expiresAt, new Date())).run();
-  db.insert(schema.memberSession).values({ tokenHash: hashToken(token), memberId, expiresAt: new Date(Date.now() + MAX_AGE * 1000) }).run();
+  await db.batch([
+    db.delete(schema.memberSession).where(lt(schema.memberSession.expiresAt, new Date())),
+    db.insert(schema.memberSession).values({ tokenHash: hashToken(token), memberId, expiresAt: new Date(Date.now() + MAX_AGE * 1000) }),
+  ]);
   (await cookies()).set(SESSION_COOKIE, token, { ...cookieOptions, maxAge: MAX_AGE });
 }
 

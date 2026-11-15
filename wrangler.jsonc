@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "act",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "routes": [{ "pattern": "aict.app", "custom_domain": true }],
+  "observability": { "enabled": true },
+  "images": { "binding": "IMAGES" },
+  "vars": { "SITE_URL": "https://aict.app" },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "act-db", "database_id": "fdea245b-18c2-4a3d-91c4-0e1ea3c65c0c", "migrations_dir": "drizzle" }
+  ],
+  "r2_buckets": [{ "binding": "UPLOADS", "bucket_name": "act-uploads" }]
+}

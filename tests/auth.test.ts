@@ -1,13 +1,12 @@
 import assert from "node:assert/strict";
-import test from "node:test";
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import test, { after, before } from "node:test";
+import { setupBindings, teardownBindings } from "./helpers/bindings";
 import { eq } from "drizzle-orm";
 import { generateKeyPairSync, sign } from "node:crypto";
 import { hashPassword, normalizeUsername, safeReturnPath, validPassword, validUsername, verifyPassword } from "../src/lib/auth-credentials";
 
-process.env.DATA_DIR = mkdtempSync(join(tmpdir(), "act-auth-test-"));
+before(setupBindings);
+after(teardownBindings);
 
 test("username and password validation", () => {
   assert.equal(normalizeUsername(" Teacher_1 "), "teacher_1");
@@ -81,12 +80,12 @@ test("OIDC rejects wrong state, nonce, audience and forged signature", async () 
 test("only the owner can edit a member work", async () => {
   const { db, schema } = await import("../src/lib/db");
   const { updateWork } = await import("../src/lib/content/mutations");
-  db.insert(schema.member).values({ id: "owner", name: "Owner" }).run();
-  db.insert(schema.work).values({ slug: "member-work", type: "web-app", title: "Original", summary: "A member work", ownerId: "owner" }).run();
+  await db.insert(schema.member).values({ id: "owner", name: "Owner" }).run();
+  await db.insert(schema.work).values({ slug: "member-work", type: "web-app", title: "Original", summary: "A member work", ownerId: "owner" }).run();
   const input = { purpose: "class" as const, type: "web-app" as const, title: "Changed", summary: "Changed summary", body: "", makers: [], links: [], audience: [], subjects: [], project: "", thumbnailAlt: "", contactEmail: "" };
   await assert.rejects(updateWork("member-work", input, { ownerId: "other" }));
   await updateWork("member-work", input, { ownerId: "owner" });
-  assert.equal(db.select().from(schema.work).where(eq(schema.work.slug, "member-work")).get()?.title, "Changed");
+  assert.equal((await db.select().from(schema.work).where(eq(schema.work.slug, "member-work")).get())?.title, "Changed");
 });
 
 test("minimal member submission derives author and link kind, preserving existing metadata", async () => {
@@ -108,32 +107,32 @@ test("minimal member submission derives author and link kind, preserving existin
 test("Google identity linking never merges or transfers accounts", async () => {
   const { resolveGoogleMember } = await import("../src/lib/google-auth");
   const { db, schema } = await import("../src/lib/db");
-  db.insert(schema.member).values([{ id: "local-a", name: "Same Name", username: "local_a" }, { id: "local-b", name: "Same Name", username: "local_b" }]).run();
-  const googleId = resolveGoogleMember("google-a", "Same Name", null);
+  await db.insert(schema.member).values([{ id: "local-a", name: "Same Name", username: "local_a" }, { id: "local-b", name: "Same Name", username: "local_b" }]).run();
+  const googleId = await resolveGoogleMember("google-a", "Same Name", null);
   assert.notEqual(googleId, "local-a");
-  assert.equal(resolveGoogleMember("google-a", "Updated Name", null), googleId);
-  assert.throws(() => resolveGoogleMember("google-a", "Same Name", "local-a"));
-  assert.equal(resolveGoogleMember("google-b", "Same Name", "local-a"), "local-a");
-  assert.equal(resolveGoogleMember("google-b", "Same Name", null), "local-a");
-  assert.throws(() => resolveGoogleMember("google-b", "Same Name", "local-b"));
-  assert.throws(() => resolveGoogleMember("google-c", "Same Name", "local-a"));
-  assert.equal(db.select().from(schema.googleIdentity).where(eq(schema.googleIdentity.memberId, "local-a")).get()?.subject, "google-b");
+  assert.equal(await resolveGoogleMember("google-a", "Updated Name", null), googleId);
+  await assert.rejects(resolveGoogleMember("google-a", "Same Name", "local-a"));
+  assert.equal(await resolveGoogleMember("google-b", "Same Name", "local-a"), "local-a");
+  assert.equal(await resolveGoogleMember("google-b", "Same Name", null), "local-a");
+  await assert.rejects(resolveGoogleMember("google-b", "Same Name", "local-b"));
+  await assert.rejects(resolveGoogleMember("google-c", "Same Name", "local-a"));
+  assert.equal((await db.select().from(schema.googleIdentity).where(eq(schema.googleIdentity.memberId, "local-a")).get())?.subject, "google-b");
 });
 
 test("Google email is stored for admin member search", async () => {
   const { resolveGoogleMember } = await import("../src/lib/google-auth");
   const { searchMembers, setMemberAdmin } = await import("../src/lib/members");
   const { db, schema } = await import("../src/lib/db");
-  const owner = resolveGoogleMember("google-owner", "Owner", null, "owner@example.test");
-  const other = resolveGoogleMember("google-other", "Other_%", null, "other@example.test");
-  const isAdmin = (id: string) => db.select().from(schema.member).where(eq(schema.member.id, id)).get()?.isAdmin;
-  assert.equal(isAdmin(owner), false);
-  assert.deepEqual(searchMembers("OTHER@example").map(m => m.id), [other]);
-  assert.deepEqual(searchMembers("_%").map(m => m.id), [other]);
-  assert.deepEqual(searchMembers("").map(m => m.id), []);
-  setMemberAdmin(owner, true);
-  assert.equal(isAdmin(owner), true);
-  assert.deepEqual(searchMembers("").map(m => m.id), [owner]);
+  const owner = await resolveGoogleMember("google-owner", "Owner", null, "owner@example.test");
+  const other = await resolveGoogleMember("google-other", "Other_%", null, "other@example.test");
+  const isAdmin = async (id: string) => (await db.select().from(schema.member).where(eq(schema.member.id, id)).get())?.isAdmin;
+  assert.equal(await isAdmin(owner), false);
+  assert.deepEqual((await searchMembers("OTHER@example")).map(m => m.id), [other]);
+  assert.deepEqual((await searchMembers("_%")).map(m => m.id), [other]);
+  assert.deepEqual((await searchMembers("")).map(m => m.id), []);
+  await setMemberAdmin(owner, true);
+  assert.equal(await isAdmin(owner), true);
+  assert.deepEqual((await searchMembers("")).map(m => m.id), [owner]);
 });
 
 test("link images: og:image parsing and internal address blocking", async () => {

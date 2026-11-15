@@ -110,7 +110,7 @@ export async function setStatusAction(fd: FormData) {
   const slug = String(fd.get("slug") ?? "");
   const status = String(fd.get("status") ?? "") as WorkStatus;
   if (!STATUSES.includes(status) || !(await getAnyWork(slug))) return;
-  setWorkStatus(slug, status, String(fd.get("note") ?? ""));
+  await setWorkStatus(slug, status, String(fd.get("note") ?? ""));
   // 공개 목록·홈·상세가 다음 방문에서 곧바로 새 상태를 보도록 캐시를 비운다.
   revalidatePath("/");
   revalidatePath("/works");
@@ -138,7 +138,7 @@ export async function createProjectAction(_prev: { error?: string; ok?: boolean 
   const summary = String(fd.get("summary") ?? "").trim();
   if (!Number.isInteger(year) || year < 2000 || year > 2100) return { error: "연도를 확인해 주세요." };
   if (!term || !name || name.length > 40 || summary.length > 300) return { error: "학기, 이름(40자), 설명(300자)을 확인해 주세요." };
-  createProject({ year, term, name, summary });
+  await createProject({ year, term, name, summary });
   refresh();
   return { ok: true };
 }
@@ -151,7 +151,7 @@ export async function createProjectPostAction(_prev: { error?: string; ok?: bool
   if (!rateLimit(`post:${access.member?.id ?? (await clientIp())}`, 20, 60 * 60 * 1000)) {
     return { error: "짧은 시간에 너무 많이 썼어요. 잠시 뒤 다시 시도해 주세요." };
   }
-  const result = createProjectPost({
+  const result = await createProjectPost({
     projectSlug: String(fd.get("project") ?? ""),
     authorId: access.member?.id ?? null,
     authorName: access.member?.name ?? "운영진",
@@ -167,7 +167,7 @@ export async function createProjectPostAction(_prev: { error?: string; ok?: bool
 export async function deleteProjectPostAction(fd: FormData) {
   const access = await projectAccess();
   if (!access.allowed) return;
-  deleteProjectPost(String(fd.get("id") ?? ""), { memberId: access.member?.id ?? null, admin: access.admin });
+  await deleteProjectPost(String(fd.get("id") ?? ""), { memberId: access.member?.id ?? null, admin: access.admin });
   refresh();
 }
 
@@ -175,7 +175,7 @@ export async function updateMakerAction(fd: FormData) {
   await requireAdmin();
   const name = String(fd.get("name") ?? "").trim().slice(0, 30);
   if (!name) return;
-  updateMaker(String(fd.get("slug") ?? ""), { name, bio: String(fd.get("bio") ?? "").trim().slice(0, 200), member: fd.get("member") === "on" });
+  await updateMaker(String(fd.get("slug") ?? ""), { name, bio: String(fd.get("bio") ?? "").trim().slice(0, 200), member: fd.get("member") === "on" });
   refresh();
 }
 
@@ -199,13 +199,13 @@ export async function setMemberAdminAction(fd: FormData) {
   const role = fd.get("role");
   if (isRole(role)) {
     if (target === member.id && role !== "admin") back("self");
-    const updated = setMemberRole(target, role);
+    const updated = await setMemberRole(target, role);
     if (updated) revalidatePath("/", "layout");
     back(updated ? `role-${role}` : "missing");
   }
   const grant = fd.get("grant") === "1";
   if (target === member.id && !grant) back("self");
-  const changed = setMemberAdmin(target, grant);
+  const changed = await setMemberAdmin(target, grant);
   if (changed) revalidatePath("/", "layout");
   back(changed ? (grant ? "granted" : "revoked") : "missing");
 }
@@ -215,8 +215,8 @@ export async function setMemberAdminAction(fd: FormData) {
 export async function toggleLikeAction(slug: string): Promise<{ liked: boolean; count: number } | null> {
   if (!slug) return null;
   try {
-    const liked = toggleLikeRow(slug, await visitorId());
-    return { liked, count: likeCount(slug) };
+    const liked = await toggleLikeRow(slug, await visitorId());
+    return { liked, count: await likeCount(slug) };
   } catch {
     return null;
   }
@@ -225,8 +225,8 @@ export async function toggleLikeAction(slug: string): Promise<{ liked: boolean; 
 export async function setBookmarkAction(slug: string, on: boolean): Promise<{ bookmarked: boolean; count: number } | null> {
   if (!slug) return null;
   try {
-    const bookmarked = setBookmarkRow(slug, await visitorId(), on);
-    return { bookmarked, count: bookmarkCount(slug) };
+    const bookmarked = await setBookmarkRow(slug, await visitorId(), on);
+    return { bookmarked, count: await bookmarkCount(slug) };
   } catch {
     return null;
   }
@@ -236,13 +236,13 @@ export async function setBookmarkAction(slug: string, on: boolean): Promise<{ bo
 
 export async function createApiTokenAction(_prev: { token?: string; error?: string }, fd: FormData): Promise<{ token?: string; error?: string }> {
   const member = await requireMember("/account/settings");
-  if (listApiTokens(member.id).length >= 5) return { error: "토큰은 회원당 5개까지 만들 수 있어요. 쓰지 않는 토큰을 폐기해 주세요." };
-  return { token: createApiToken(member.id, String(fd.get("name") ?? "")).token };
+  if ((await listApiTokens(member.id)).length >= 5) return { error: "토큰은 회원당 5개까지 만들 수 있어요. 쓰지 않는 토큰을 폐기해 주세요." };
+  return { token: (await createApiToken(member.id, String(fd.get("name") ?? ""))).token };
 }
 
 export async function revokeApiTokenAction(fd: FormData) {
   const member = await requireMember("/account/settings");
-  revokeApiToken(member.id, String(fd.get("id") ?? ""));
+  await revokeApiToken(member.id, String(fd.get("id") ?? ""));
   refresh();
 }
 

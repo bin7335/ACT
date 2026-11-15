@@ -5,6 +5,7 @@ import { AUDIENCES, LINK_KINDS, LINK_LABEL, WORK_PURPOSE_HINT, WORK_PURPOSE_LABE
 import { MAX_LINKS, type WorkFormState, type WorkFormValues } from "@/lib/content/form";
 import { Toast } from "./Toast";
 import { Button, Notice } from "./ui";
+import { VideoUpload } from "./VideoUpload";
 import f from "./form.module.css";
 
 type Props = {
@@ -30,6 +31,7 @@ export function WorkForm({ action, initial, mode, projects, currentThumbnail, su
   const formRef = useRef<HTMLFormElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
   const [links, setLinks] = useState(() => (initial.links.length ? initial.links : [{ kind: "open", url: "" }]).map((l, i) => ({ ...l, id: i })));
+  const [linkMode, setLinkMode] = useState<"link" | "file">(initial.links[0]?.kind === "file" ? "file" : "link");
   const [title, setTitle] = useState(initial.title);
   const [summary, setSummary] = useState(initial.summary);
   const [preview, setPreview] = useState<string | null>(null);
@@ -83,7 +85,18 @@ export function WorkForm({ action, initial, mode, projects, currentThumbnail, su
     <div className={f.field}><label className={f.label} htmlFor={`${uid}-type`}>작품 형태</label><select id={`${uid}-type`} name="type" className={f.select} defaultValue={initial.type} required><option value="" disabled>선택해 주세요</option>{WORK_TYPES.map(type => <option key={type} value={type}>{WORK_TYPE_LABEL[type]}</option>)}</select></div>
     <div className={f.field}><label className={f.label} htmlFor={`${uid}-title`}>제목</label><input id={`${uid}-title`} name="title" className={f.input} defaultValue={initial.title} required minLength={2} maxLength={40} /></div>
     <div className={f.field}><label className={f.label} htmlFor={`${uid}-summary`}>한 줄 소개</label><input id={`${uid}-summary`} name="summary" className={f.input} defaultValue={initial.summary} required minLength={5} maxLength={80} /></div>
-    <div className={f.field}><label className={f.label} htmlFor={`${uid}-url`}>작품 링크</label><input id={`${uid}-url`} name="link_url" type="url" className={f.input} defaultValue={initial.links[0]?.url ?? ""} placeholder="https://" required /></div>
+    <div className={f.field}>
+      <span className={f.label}>작품 링크</span>
+      <div className={f.checks}>
+        <label className={f.check}><input type="radio" name="_link_mode" checked={linkMode === "link"} onChange={() => setLinkMode("link")} />링크로 열기</label>
+        <label className={f.check}><input type="radio" name="_link_mode" checked={linkMode === "file"} onChange={() => setLinkMode("file")} />영상 파일로 올리기</label>
+      </div>
+      {linkMode === "link" ? (
+        <input id={`${uid}-url`} name="link_url" type="url" className={f.input} defaultValue={initial.links[0]?.kind === "file" ? "" : initial.links[0]?.url ?? ""} placeholder="https://" required />
+      ) : (
+        <VideoUpload initialUrl={initial.links[0]?.kind === "file" ? initial.links[0]?.url : ""} />
+      )}
+    </div>
     <div className={f.field}><label className={f.label} htmlFor={`${uid}-image`}>대표 이미지 <span className={f.hint}>(선택)</span></label><input id={`${uid}-image`} name="thumbnail" type="file" accept="image/jpeg,image/png,image/webp,image/gif" className={f.file} onChange={event => { const file = event.target.files?.[0]; setPreview(file ? URL.createObjectURL(file) : null); if (file) setRemoveThumb(false); }} /><p className={f.hint}>5MB 이하. 없으면 작품 링크의 대표 이미지를 가져오고, 그것도 없으면 기본 썸네일로 표시합니다.</p>{thumbShown && <div className={f.thumbPreview}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={thumbShown} alt="대표 이미지 미리보기" /></div>}{currentThumbnail && <label className={f.check}><input type="checkbox" name="remove_thumbnail" checked={removeThumb} onChange={event => setRemoveThumb(event.target.checked)} />기존 이미지 삭제</label>}</div>
     <div className={f.field}><label className={f.label} htmlFor={`${uid}-body`}>상세 설명 <span className={f.hint}>(선택)</span></label><textarea id={`${uid}-body`} name="body" className={f.textarea} rows={4} maxLength={5000} defaultValue={initial.body} placeholder="작품 소개나 사용 방법을 적어 주세요." /></div>
     <Button type="submit" variant="primary" disabled={pending}>{pending ? "저장하는 중…" : submitLabel}</Button>
@@ -176,7 +189,7 @@ export function WorkForm({ action, initial, mode, projects, currentThumbnail, su
           <span className="t-eyebrow">03</span> 작품 링크
         </legend>
         <p className={f.hint} id="links-hint">
-          첫 번째 링크가 카드의 「바로 열기」 버튼이 됩니다. 앱은 스토어 링크를, 영상은 YouTube 링크를 넣으면 상세 페이지에서 바로 재생돼요.
+          첫 번째 링크가 카드의 「바로 열기」 버튼이 됩니다. 앱은 스토어 링크를, 영상은 YouTube 링크를 넣거나 종류를 「영상 파일」로 바꿔 직접 올릴 수 있어요.
         </p>
         <div className={f.links}>
           {links.map((l, i) => (
@@ -184,17 +197,32 @@ export function WorkForm({ action, initial, mode, projects, currentThumbnail, su
               <label className="visually-hidden" htmlFor={`${uid}-lk-${l.id}`}>
                 링크 {i + 1} 종류
               </label>
-              <select id={`${uid}-lk-${l.id}`} name="link_kind" defaultValue={l.kind} className={f.select}>
+              <select
+                id={`${uid}-lk-${l.id}`}
+                name="link_kind"
+                value={l.kind}
+                className={f.select}
+                onChange={(ev) => {
+                  const kind = ev.target.value;
+                  setLinks((ls) => ls.map((x) => (x.id === l.id ? { ...x, kind, url: "" } : x)));
+                }}
+              >
                 {LINK_KINDS.map((k) => (
                   <option key={k} value={k}>
                     {LINK_LABEL[k]}
                   </option>
                 ))}
               </select>
-              <label className="visually-hidden" htmlFor={`${uid}-lu-${l.id}`}>
-                링크 {i + 1} 주소
-              </label>
-              <input id={`${uid}-lu-${l.id}`} name="link_url" type="url" inputMode="url" defaultValue={l.url} placeholder="https://" className={f.input} required={i === 0} aria-invalid={!!e.links} aria-describedby={described("links", true)} />
+              {l.kind === "file" ? (
+                <VideoUpload initialUrl={l.url} />
+              ) : (
+                <>
+                  <label className="visually-hidden" htmlFor={`${uid}-lu-${l.id}`}>
+                    링크 {i + 1} 주소
+                  </label>
+                  <input id={`${uid}-lu-${l.id}`} name="link_url" type="url" inputMode="url" defaultValue={l.url} placeholder="https://" className={f.input} required={i === 0} aria-invalid={!!e.links} aria-describedby={described("links", true)} />
+                </>
+              )}
               {links.length > 1 && (
                 <button type="button" className={f.iconBtn} aria-label={`링크 ${i + 1} 삭제`} onClick={() => setLinks((ls) => ls.filter((x) => x.id !== l.id))}>
                   ×

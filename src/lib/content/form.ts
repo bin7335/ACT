@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isVideoPath } from "@/lib/video";
 import { AUDIENCES, LINK_KINDS, WORK_PURPOSES, WORK_TYPES } from "./types";
 
 // 작품 등록/수정 폼 — 클라이언트(폼 상태)와 서버(검증)가 함께 쓴다.
@@ -47,18 +48,22 @@ const list = (s: string) =>
     .map((x) => x.trim())
     .filter(Boolean);
 
-const httpUrl = z
-  .string()
-  .trim()
-  .max(500, "주소가 너무 길어요.")
-  .refine((v) => {
-    try {
-      const u = new URL(v);
-      return u.protocol === "https:" || u.protocol === "http:";
-    } catch {
-      return false;
+// 영상 파일(kind: file)은 서버가 만든 내부 경로만, 나머지는 http(s) 전체 주소만 받는다.
+const linkSchema = z
+  .object({ kind: z.enum(LINK_KINDS), url: z.string().trim().max(500, "주소가 너무 길어요.") })
+  .superRefine((link, ctx) => {
+    if (link.kind === "file") {
+      if (!isVideoPath(link.url)) ctx.addIssue({ code: "custom", path: ["url"], message: "영상 파일을 올려 주세요." });
+      return;
     }
-  }, "http:// 또는 https://로 시작하는 전체 주소를 넣어 주세요.");
+    try {
+      const u = new URL(link.url);
+      if (u.protocol === "https:" || u.protocol === "http:") return;
+    } catch {
+      // 아래에서 안내 문구를 단다.
+    }
+    ctx.addIssue({ code: "custom", path: ["url"], message: "http:// 또는 https://로 시작하는 전체 주소를 넣어 주세요." });
+  });
 
 export const workSchema = z.object({
   purpose: z.enum(WORK_PURPOSES, { error: "어디에 쓰는 작품인지 골라 주세요." }),
@@ -67,8 +72,8 @@ export const workSchema = z.object({
   summary: z.string().trim().min(5, "한 줄 설명을 써 주세요.").max(80, "한 줄 설명은 80자 이내로 써 주세요."),
   body: z.string().trim().max(5000, "설명은 5000자 이내로 써 주세요."),
   links: z
-    .array(z.object({ kind: z.enum(LINK_KINDS), url: httpUrl }))
-    .min(1, "작품을 열 수 있는 링크를 하나 이상 넣어 주세요.")
+    .array(linkSchema)
+    .min(1, "작품을 열 수 있는 링크나 영상 파일을 하나 이상 넣어 주세요.")
     .max(MAX_LINKS),
   audience: z.array(z.enum(AUDIENCES)),
   subjects: z.array(z.string().max(20, "교과·영역 이름은 20자 이내로 써 주세요.")).max(5, "교과·영역은 5개까지 넣을 수 있어요."),
@@ -104,12 +109,14 @@ export function readMemberWorkForm(fd: FormData, name: string, existing?: WorkFo
   const values = readWorkForm(fd);
   const url = String(fd.get("link_url") ?? "").trim();
   let kind = "open";
-  try {
-    const host = new URL(url).hostname.toLowerCase();
-    if (host === "youtu.be" || host === "youtube.com" || host.endsWith(".youtube.com")) kind = "youtube";
-    else if (host === "apps.apple.com") kind = "store-ios";
-    else if (host === "play.google.com") kind = "store-android";
-  } catch { /* URL errors are reported by validateWork. */ }
+  if (isVideoPath(url)) kind = "file";
+  else
+    try {
+      const host = new URL(url).hostname.toLowerCase();
+      if (host === "youtu.be" || host === "youtube.com" || host.endsWith(".youtube.com")) kind = "youtube";
+      else if (host === "apps.apple.com") kind = "store-ios";
+      else if (host === "play.google.com") kind = "store-android";
+    } catch { /* URL errors are reported by validateWork. */ }
   return {
     ...values,
     links: [{ kind, url }, ...(existing?.links.slice(1) ?? [])],

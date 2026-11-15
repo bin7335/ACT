@@ -37,7 +37,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/admin">["
   const tab = (TABS as string[]).includes(String(sp.status)) ? (sp.status as WorkStatus | "all") : "review";
   const [counts, works, member] = await Promise.all([countByStatus(), listWorksByStatus(tab), currentMember()]);
   const memberList = membersView && member?.isAdmin
-    ? (memberQuery ? { items: searchMembers(memberQuery, "all"), total: 0, page: 1, pageCount: 1 } : listMembers(Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1))
+    ? (memberQuery ? { items: await searchMembers(memberQuery, "all"), total: 0, page: 1, pageCount: 1 } : await listMembers(Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1))
     : null;
 
   return (

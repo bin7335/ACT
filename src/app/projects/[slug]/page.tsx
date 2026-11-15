@@ -31,7 +31,7 @@ export default async function ProjectPage(props: PageProps<"/projects/[slug]">) 
   const data = await getProject(slug);
   if (!data) notFound();
   const { project, works, makers } = data;
-  const posts = listProjectPosts(project.slug);
+  const posts = await listProjectPosts(project.slug);
   return (
     <div className={`container ${p.page}`}>
       <SectionHeader

@@ -8,11 +8,6 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  cacheComponents: true,
-  partialPrefetching: true,
-  // VM에서 단일 Node 프로세스로 돌린다 (CONSTITUTION.md §6).
-  output: "standalone",
-  serverExternalPackages: ["better-sqlite3"],
   poweredByHeader: false,
   experimental: {
     serverActions: { bodySizeLimit: "6mb" },
@@ -29,3 +24,7 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+// `next dev`에서도 wrangler의 로컬 D1·R2 바인딩을 쓴다.
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+initOpenNextCloudflareForDev();

@@ -12,8 +12,8 @@ const RESULT: Record<string, { tone?: "danger" | "success"; text: string }> = {
   denied: { tone: "danger", text: "운영진만 권한을 바꿀 수 있어요." },
 };
 
-export function AdminMembers({ selfId, query, result, context = "settings" }: { selfId: string; query: string; result?: string; context?: "settings" | "admin" }) {
-  const members = searchMembers(query, context === "admin" ? "all" : "admins");
+export async function AdminMembers({ selfId, query, result, context = "settings" }: { selfId: string; query: string; result?: string; context?: "settings" | "admin" }) {
+  const members = await searchMembers(query, context === "admin" ? "all" : "admins");
   const notice = result ? RESULT[result] : undefined;
   return <section id="admins" className={s.setting} aria-labelledby="admins-heading">
     <div className={s.settingHead}><h2 id="admins-heading">운영진 권한</h2><p>운영진은 작품 검수와 사이트 관리를 할 수 있어요.</p></div>

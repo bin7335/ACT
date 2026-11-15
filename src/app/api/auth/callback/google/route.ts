@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   if (!state || !expected || state.length > 256 || !safeEqual(state, expected)) return failure(false);
   jar.delete(OAUTH_COOKIE);
   // DELETE RETURNING으로 재전송·병렬 콜백도 단 한 번만 소비한다.
-  const attempt = db.delete(schema.oauthAttempt).where(and(eq(schema.oauthAttempt.stateHash, hashToken(state)), gt(schema.oauthAttempt.expiresAt, new Date()))).returning().get();
+  const attempt = await db.delete(schema.oauthAttempt).where(and(eq(schema.oauthAttempt.stateHash, hashToken(state)), gt(schema.oauthAttempt.expiresAt, new Date()))).returning().get();
   if (!attempt) return failure(false);
   const linking = !!attempt.linkSessionHash;
   try {
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     } else if (await currentMember()) {
       return failure(true);
     }
-    const id = resolveGoogleMember(identity.subject, identity.name, linkMemberId, identity.email);
+    const id = await resolveGoogleMember(identity.subject, identity.name, linkMemberId, identity.email);
     await startMemberSession(id);
     return NextResponse.redirect(new URL(safeReturnPath(attempt.next), origin), { headers: { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" } });
   } catch {

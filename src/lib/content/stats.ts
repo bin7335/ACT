@@ -14,8 +14,8 @@ function isValidVisitor(value: string | undefined): value is string {
 }
 
 /** 공개 작품 조회수를 1 올린다. */
-export function incrementView(slug: string) {
-  db.update(schema.work)
+export async function incrementView(slug: string) {
+  await db.update(schema.work)
     .set({ viewCount: sql`${schema.work.viewCount} + 1` })
     .where(and(eq(schema.work.slug, slug), eq(schema.work.status, "published")))
     .run();
@@ -28,22 +28,22 @@ export async function recordView(slug: string) {
   if (h.get("next-router-prefetch") || h.get("purpose") === "prefetch") return;
   // 서버 액션의 응답은 화면 갱신일 뿐 새 방문이 아니다(좋아요를 누를 때마다 조회수가 오르지 않게).
   if (h.get("next-action")) return;
-  incrementView(slug);
+  await incrementView(slug);
 }
 
-export function likeCount(slug: string) {
-  return db.select({ n: sql<number>`count(*)` }).from(schema.workLike).where(eq(schema.workLike.workSlug, slug)).get()?.n ?? 0;
+export async function likeCount(slug: string) {
+  return (await db.select({ n: sql<number>`count(*)` }).from(schema.workLike).where(eq(schema.workLike.workSlug, slug)).get())?.n ?? 0;
 }
 
-export function isLiked(slug: string, clientId: string) {
-  return !!db.select({ c: schema.workLike.clientId }).from(schema.workLike)
-    .where(and(eq(schema.workLike.workSlug, slug), eq(schema.workLike.clientId, clientId))).get();
+export async function isLiked(slug: string, clientId: string) {
+  return !!(await db.select({ c: schema.workLike.clientId }).from(schema.workLike)
+    .where(and(eq(schema.workLike.workSlug, slug), eq(schema.workLike.clientId, clientId))).get());
 }
 
 /** 작품별 좋아요 수. 목록 화면에서 한 번에 읽는다. */
-export function likeCounts(slugs: string[]): Map<string, number> {
+export async function likeCounts(slugs: string[]): Promise<Map<string, number>> {
   if (!slugs.length) return new Map();
-  const rows = db.select({ slug: schema.workLike.workSlug, n: sql<number>`count(*)` })
+  const rows = await db.select({ slug: schema.workLike.workSlug, n: sql<number>`count(*)` })
     .from(schema.workLike)
     .where(inArray(schema.workLike.workSlug, slugs))
     .groupBy(schema.workLike.workSlug)
@@ -51,19 +51,19 @@ export function likeCounts(slugs: string[]): Map<string, number> {
   return new Map(rows.map((r) => [r.slug, r.n]));
 }
 
-export function bookmarkCount(slug: string) {
-  return db.select({ n: sql<number>`count(*)` }).from(schema.workBookmark).where(eq(schema.workBookmark.workSlug, slug)).get()?.n ?? 0;
+export async function bookmarkCount(slug: string) {
+  return (await db.select({ n: sql<number>`count(*)` }).from(schema.workBookmark).where(eq(schema.workBookmark.workSlug, slug)).get())?.n ?? 0;
 }
 
-export function isBookmarked(slug: string, clientId: string) {
-  return !!db.select({ c: schema.workBookmark.clientId }).from(schema.workBookmark)
-    .where(and(eq(schema.workBookmark.workSlug, slug), eq(schema.workBookmark.clientId, clientId))).get();
+export async function isBookmarked(slug: string, clientId: string) {
+  return !!(await db.select({ c: schema.workBookmark.clientId }).from(schema.workBookmark)
+    .where(and(eq(schema.workBookmark.workSlug, slug), eq(schema.workBookmark.clientId, clientId))).get());
 }
 
 /** 작품별 북마크 수. 목록 화면에서 한 번에 읽는다. */
-export function bookmarkCounts(slugs: string[]): Map<string, number> {
+export async function bookmarkCounts(slugs: string[]): Promise<Map<string, number>> {
   if (!slugs.length) return new Map();
-  const rows = db.select({ slug: schema.workBookmark.workSlug, n: sql<number>`count(*)` })
+  const rows = await db.select({ slug: schema.workBookmark.workSlug, n: sql<number>`count(*)` })
     .from(schema.workBookmark)
     .where(inArray(schema.workBookmark.workSlug, slugs))
     .groupBy(schema.workBookmark.workSlug)
@@ -72,14 +72,14 @@ export function bookmarkCounts(slugs: string[]): Map<string, number> {
 }
 
 /** 북마크를 화면 상태에 맞춘다(이미 그 상태면 그대로). */
-export function setBookmarkRow(slug: string, clientId: string, on: boolean) {
-  const published = db.select({ s: schema.work.slug }).from(schema.work)
+export async function setBookmarkRow(slug: string, clientId: string, on: boolean) {
+  const published = await db.select({ s: schema.work.slug }).from(schema.work)
     .where(and(eq(schema.work.slug, slug), eq(schema.work.status, "published"))).get();
   if (!published) throw new Error("Published work not found");
   if (on) {
-    db.insert(schema.workBookmark).values({ workSlug: slug, clientId }).onConflictDoNothing().run();
+    await db.insert(schema.workBookmark).values({ workSlug: slug, clientId }).onConflictDoNothing().run();
   } else {
-    db.delete(schema.workBookmark).where(and(eq(schema.workBookmark.workSlug, slug), eq(schema.workBookmark.clientId, clientId))).run();
+    await db.delete(schema.workBookmark).where(and(eq(schema.workBookmark.workSlug, slug), eq(schema.workBookmark.clientId, clientId))).run();
   }
   return on;
 }
@@ -90,10 +90,12 @@ export async function visitReactions(slugs: string[]) {
   const jar = await cookies();
   const visitor = jar.get(VISITOR_COOKIE)?.value;
   if (!isValidVisitor(visitor) || !slugs.length) return { liked: new Set<string>(), bookmarked: new Set<string>() };
-  const liked = db.select({ slug: schema.workLike.workSlug }).from(schema.workLike)
-    .where(and(eq(schema.workLike.clientId, visitor), inArray(schema.workLike.workSlug, slugs))).all();
-  const bookmarked = db.select({ slug: schema.workBookmark.workSlug }).from(schema.workBookmark)
-    .where(and(eq(schema.workBookmark.clientId, visitor), inArray(schema.workBookmark.workSlug, slugs))).all();
+  const [liked, bookmarked] = await Promise.all([
+    db.select({ slug: schema.workLike.workSlug }).from(schema.workLike)
+      .where(and(eq(schema.workLike.clientId, visitor), inArray(schema.workLike.workSlug, slugs))).all(),
+    db.select({ slug: schema.workBookmark.workSlug }).from(schema.workBookmark)
+      .where(and(eq(schema.workBookmark.clientId, visitor), inArray(schema.workBookmark.workSlug, slugs))).all(),
+  ]);
   return { liked: new Set(liked.map((r) => r.slug)), bookmarked: new Set(bookmarked.map((r) => r.slug)) };
 }
 
@@ -104,15 +106,15 @@ export async function reactionProps(slugs: string[]) {
 }
 
 /** 좋아요를 켜고 끈다. 켜졌으면 true. */
-export function toggleLikeRow(slug: string, clientId: string) {
-  const published = db.select({ s: schema.work.slug }).from(schema.work)
+export async function toggleLikeRow(slug: string, clientId: string) {
+  const published = await db.select({ s: schema.work.slug }).from(schema.work)
     .where(and(eq(schema.work.slug, slug), eq(schema.work.status, "published"))).get();
   if (!published) throw new Error("Published work not found");
-  if (isLiked(slug, clientId)) {
-    db.delete(schema.workLike).where(and(eq(schema.workLike.workSlug, slug), eq(schema.workLike.clientId, clientId))).run();
+  if (await isLiked(slug, clientId)) {
+    await db.delete(schema.workLike).where(and(eq(schema.workLike.workSlug, slug), eq(schema.workLike.clientId, clientId))).run();
     return false;
   }
-  db.insert(schema.workLike).values({ workSlug: slug, clientId }).onConflictDoNothing().run();
+  await db.insert(schema.workLike).values({ workSlug: slug, clientId }).onConflictDoNothing().run();
   return true;
 }
 
@@ -138,5 +140,5 @@ export async function likeState(slug: string) {
   const { cookies } = await import("next/headers");
   const jar = await cookies();
   const visitor = jar.get(VISITOR_COOKIE)?.value;
-  return { liked: isValidVisitor(visitor) ? isLiked(slug, visitor) : false, count: likeCount(slug) };
+  return { liked: isValidVisitor(visitor) ? await isLiked(slug, visitor) : false, count: await likeCount(slug) };
 }

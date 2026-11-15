@@ -29,10 +29,10 @@ export async function credentialsAction(mode: "login" | "signup", _prev: AuthSta
     if (fd.get("consent") !== "on") return { error: "계정 정보 저장 안내를 확인해 주세요." };
     const passwordHash = await hashPassword(password);
     memberId = crypto.randomUUID();
-    const inserted = db.insert(schema.member).values({ id: memberId, username, name, passwordHash }).onConflictDoNothing().returning({ id: schema.member.id }).get();
+    const inserted = await db.insert(schema.member).values({ id: memberId, username, name, passwordHash }).onConflictDoNothing().returning({ id: schema.member.id }).get();
     if (!inserted) return { error: "사용할 수 없는 아이디예요. 다른 아이디를 입력해 주세요." };
   } else {
-    const member = db.select().from(schema.member).where(eq(schema.member.username, username)).get();
+    const member = await db.select().from(schema.member).where(eq(schema.member.username, username)).get();
     if (!(await verifyPassword(password, member?.passwordHash ?? null)) || !member) return { error: "아이디 또는 비밀번호가 맞지 않아요." };
     memberId = member.id;
   }
@@ -44,7 +44,7 @@ export async function updateNameAction(_prev: AuthState & { saved?: boolean }, f
   const member = await requireMember("/account/settings");
   const name = String(fd.get("name") ?? "").trim();
   if (!name || name.length > 40) return { error: "표시 이름은 1~40자로 입력해 주세요." };
-  db.update(schema.member).set({ name }).where(eq(schema.member.id, member.id)).run();
+  await db.update(schema.member).set({ name }).where(eq(schema.member.id, member.id)).run();
   refresh();
   return { saved: true };
 }
@@ -65,10 +65,10 @@ export async function beginGoogleAction(link: boolean, _prev: AuthState, fd: For
   let linkSessionHash: string | null = null;
   if (link) {
     const member = await requireMember();
-    const record = db.select().from(schema.member).where(eq(schema.member.id, member.id)).get();
+    const record = await db.select().from(schema.member).where(eq(schema.member.id, member.id)).get();
     const password = String(fd.get("password") ?? "");
     if (!record?.passwordHash || !validPassword(password) || !(await verifyPassword(password, record.passwordHash))) return { error: "계정 연결을 위해 현재 비밀번호를 확인해 주세요." };
-    if (db.select().from(schema.googleIdentity).where(eq(schema.googleIdentity.memberId, member.id)).get()) return { error: "이미 Google 계정이 연결되어 있어요." };
+    if (await db.select().from(schema.googleIdentity).where(eq(schema.googleIdentity.memberId, member.id)).get()) return { error: "이미 Google 계정이 연결되어 있어요." };
     linkSessionHash = await sessionHash();
     if (!linkSessionHash) return { error: "다시 로그인해 주세요." };
   } else if (await currentMember()) {
@@ -79,9 +79,9 @@ export async function beginGoogleAction(link: boolean, _prev: AuthState, fd: For
   const verifier = oauth.generateRandomCodeVerifier();
   const jar = await cookies();
   const oldState = jar.get(OAUTH_COOKIE)?.value;
-  if (oldState) db.delete(schema.oauthAttempt).where(eq(schema.oauthAttempt.stateHash, hashToken(oldState))).run();
-  db.delete(schema.oauthAttempt).where(lt(schema.oauthAttempt.expiresAt, new Date())).run();
-  db.insert(schema.oauthAttempt).values({ stateHash: hashToken(state), nonce, verifier, linkSessionHash, next: link ? "/account/settings?linked=1" : safeReturnPath(String(fd.get("next") ?? "")), expiresAt: new Date(Date.now() + 600000) }).run();
+  if (oldState) await db.delete(schema.oauthAttempt).where(eq(schema.oauthAttempt.stateHash, hashToken(oldState))).run();
+  await db.delete(schema.oauthAttempt).where(lt(schema.oauthAttempt.expiresAt, new Date())).run();
+  await db.insert(schema.oauthAttempt).values({ stateHash: hashToken(state), nonce, verifier, linkSessionHash, next: link ? "/account/settings?linked=1" : safeReturnPath(String(fd.get("next") ?? "")), expiresAt: new Date(Date.now() + 600000) }).run();
   jar.set(OAUTH_COOKIE, state, { ...cookieOptions, maxAge: 600 });
   const url = new URL(google.authorization_endpoint!);
   url.search = new URLSearchParams({ client_id: config.client.client_id, redirect_uri: config.callback, response_type: "code", scope: "openid profile email", state, nonce, code_challenge: await oauth.calculatePKCECodeChallenge(verifier), code_challenge_method: "S256", prompt: "select_account" }).toString();

@@ -18,7 +18,7 @@ export function FavoriteList() {
     if (!key) return;
     const ctrl = new AbortController();
     fetch(`/api/works?slugs=${encodeURIComponent(key)}`, { signal: ctrl.signal })
-      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((r): Promise<{ works: Revived[] }> => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((data: { works: Revived[] }) =>
         setState({
           key,

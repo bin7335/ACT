@@ -27,7 +27,7 @@ function fail(error: string, status: number, fields?: Record<string, string>) {
 
 /** 에이전트용 작품 등록 — 회원 API 토큰으로 인증한다. */
 export async function POST(request: Request) {
-  const member = memberForToken(bearer(request));
+  const member = await memberForToken(bearer(request));
   if (!member) return fail("유효하지 않은 API 토큰이에요. Authorization: Bearer <토큰> 헤더를 확인해 주세요.", 401);
   if (!rateLimit(`api-work:${member.memberId}`, 30, 60 * 60 * 1000)) return fail("짧은 시간에 너무 많이 등록했어요. 잠시 뒤 다시 시도해 주세요.", 429);
 
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
   revalidatePath("/");
   revalidatePath("/works");
   revalidatePath("/admin");
-  const status = member.isAdmin ? "published" : "review";
+  const status = member.isAdmin || member.isResearch ? "published" : "review";
   return Response.json(
     { slug, status, url: `/works/${slug}`, message: status === "published" ? "작품을 바로 공개했어요." : "검수 대기로 등록했어요. 운영진 확인 뒤 공개됩니다." },
     { status: 201, headers: { "Cache-Control": "no-store" } },
