@@ -1,7 +1,8 @@
 import "server-only";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, ne, sql } from "drizzle-orm";
 import { connection } from "next/server";
 import { db, schema } from "@/lib/db";
+import { textList } from "@/lib/db/text-list";
 import { bookmarkCounts, likeCounts } from "./stats";
 import {
   LINK_KINDS,
@@ -32,7 +33,7 @@ async function makersFor(slugs: string[]): Promise<Map<string, MakerRef[]>> {
     .select({ workSlug: schema.workMaker.workSlug, slug: schema.maker.slug, name: schema.maker.name })
     .from(schema.workMaker)
     .innerJoin(schema.maker, eq(schema.maker.slug, schema.workMaker.makerSlug))
-    .where(inArray(schema.workMaker.workSlug, slugs))
+    .where(inArray(schema.workMaker.workSlug, textList(slugs)))
     .orderBy(asc(schema.workMaker.position))
     .all();
   for (const r of rows) {
@@ -165,6 +166,32 @@ export async function getLatestWorks(limit = 8): Promise<WorkSummary[]> {
   return summaries(await db.select().from(schema.work).where(published).orderBy(...newest).limit(limit).all());
 }
 
+export type PopularThumbnail = { slug: string; title: string; thumbnail: string; thumbnailAlt: string | null };
+
+/**
+ * 썸네일이 있는 공개 작품을 좋아요 많은 순으로 고른다(같으면 최신순 — getArchive의 likes 정렬과 같은 순서).
+ * getArchive는 PAGE_SIZE에서 자르고 썸네일 없는 작품도 섞여 있어, 여기서는 조건과 개수를 SQL에서 바로 건다.
+ * 요청 문맥 없이도 부를 수 있게 connection()은 getPopularThumbnails에 둔다.
+ */
+export async function selectPopularThumbnails(limit: number): Promise<PopularThumbnail[]> {
+  const rows = await db
+    .select({ slug: schema.work.slug, title: schema.work.title, thumbnail: schema.work.thumbnail, thumbnailAlt: schema.work.thumbnailAlt })
+    .from(schema.work)
+    .leftJoin(schema.workLike, eq(schema.workLike.workSlug, schema.work.slug))
+    .where(and(published, isNotNull(schema.work.thumbnail), ne(schema.work.thumbnail, "")))
+    .groupBy(schema.work.slug)
+    .orderBy(desc(sql`count(${schema.workLike.clientId})`), ...newest)
+    .limit(limit)
+    .all();
+  return rows.flatMap((r) => (r.thumbnail ? [{ ...r, thumbnail: r.thumbnail }] : []));
+}
+
+/** 홈 화면 입자 아카이브에 쓰는 인기 작품 썸네일 */
+export async function getPopularThumbnails(limit = 9): Promise<PopularThumbnail[]> {
+  await connection();
+  return selectPopularThumbnails(limit);
+}
+
 export async function listPublishedSlugs() {
   await connection();
   return await db.select({ slug: schema.work.slug, updatedAt: schema.work.updatedAt }).from(schema.work).where(published).all();
@@ -223,7 +250,7 @@ export async function getRelatedWorks(w: WorkDetail, limit = 4): Promise<WorkSum
     ? (await db
         .selectDistinct({ slug: schema.workMaker.workSlug })
         .from(schema.workMaker)
-        .where(inArray(schema.workMaker.makerSlug, makerSlugs))
+        .where(inArray(schema.workMaker.makerSlug, textList(makerSlugs)))
         .all()).map((r) => r.slug)
     : [];
   const rows = (await db.select().from(schema.work).where(published).orderBy(...newest).all()).filter((r) => r.slug !== w.slug);
@@ -235,7 +262,7 @@ export async function getRelatedWorks(w: WorkDetail, limit = 4): Promise<WorkSum
 export async function getWorksBySlugs(slugs: string[]): Promise<WorkSummary[]> {
   await connection();
   if (!slugs.length) return [];
-  const rows = await db.select().from(schema.work).where(and(inArray(schema.work.slug, slugs.slice(0, 200)), published)).all();
+  const rows = await db.select().from(schema.work).where(and(inArray(schema.work.slug, textList(slugs.slice(0, 200))), published)).all();
   const order = new Map(slugs.map((s, i) => [s, i]));
   return await summaries(rows.sort((a, b) => (order.get(a.slug) ?? 0) - (order.get(b.slug) ?? 0)));
 }
@@ -268,7 +295,7 @@ export async function getMaker(slug: string) {
   const m = await db.select().from(schema.maker).where(eq(schema.maker.slug, slug)).get();
   if (!m) return null;
   const slugs = (await db.select({ s: schema.workMaker.workSlug }).from(schema.workMaker).where(eq(schema.workMaker.makerSlug, slug)).all()).map((r) => r.s);
-  const rows = slugs.length ? await db.select().from(schema.work).where(and(inArray(schema.work.slug, slugs), published)).orderBy(...newest).all() : [];
+  const rows = slugs.length ? await db.select().from(schema.work).where(and(inArray(schema.work.slug, textList(slugs)), published)).orderBy(...newest).all() : [];
   return { maker: m, works: await summaries(rows) };
 }
 

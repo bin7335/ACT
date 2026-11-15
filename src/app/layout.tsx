@@ -80,7 +80,7 @@ export default function RootLayout({ children, auth }: LayoutProps<"/">) {
               <Link href="/works">작품</Link>
               <Link href="/makers">제작자</Link>
               <Link href="/about">소개</Link>
-              <Link href="/landing">ACT 이야기</Link>
+              <Link href="/">ACT 이야기</Link>
               <Link href="/submit">작품 올리기</Link>
             </nav>
           </div>

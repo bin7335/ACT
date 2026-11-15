@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, type ReactNode } from "react";
 import { createStage, type StageHandle } from "./engine";
 import s from "./landing.module.css";
 
@@ -10,15 +10,32 @@ const STEPS = [
   { phase: "archive", label: "03 아카이브" },
 ] as const;
 
+type RegisterCards = (root: HTMLElement | null) => void;
+const CardsContext = createContext<RegisterCards | null>(null);
+
+/** ThumbCards가 자기 루트 요소를 캔버스 엔진에 알릴 때 쓴다. ParticleStage 밖에서는 null. */
+export function useRegisterCards() {
+  return useContext(CardsContext);
+}
+
 /**
- * 랜딩 히어로. 캔버스가 영역 전체를 덮고, 점들은 오른쪽(좁은 화면에서는 아래) plot 상자 안에서
- * 작품 격자로 완성된다. 문구(children)는 서버에서 그려 그대로 끼운다.
+ * 랜딩 히어로. 캔버스가 영역 전체를 덮고, 점들은 오른쪽(좁은 화면에서는 아래) plot 상자 안에서 완성된다.
+ * 문구(children)와 작품 카드(cards)는 서버에서 그려 그대로 끼운다. cards가 연결되면 점들이 실제 썸네일로
+ * 모이고, 없거나 쓸 수 없으면 추상 작품 격자로 모인다.
  */
-export function ParticleStage({ children }: { children: ReactNode }) {
+export function ParticleStage({ children, cards }: { children: ReactNode; cards?: ReactNode }) {
   const heroRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const plotRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<StageHandle | null>(null);
+  const cardsRef = useRef<HTMLElement | null>(null);
+  const expectsCards = cards != null;
+
+  // 카드는 스트리밍으로 엔진보다 늦게 올 수도, 먼저 와 있을 수도 있다.
+  const registerCards = useCallback<RegisterCards>((root) => {
+    cardsRef.current = root;
+    stageRef.current?.setCards(root);
+  }, []);
 
   useEffect(() => {
     const hero = heroRef.current;
@@ -34,6 +51,8 @@ export function ParticleStage({ children }: { children: ReactNode }) {
         canvas,
         plot,
         reduced: motion.matches,
+        cards: cardsRef.current,
+        awaitCards: expectsCards,
         onPhase: (phase) => {
           hero.dataset.phase = phase;
         },
@@ -54,15 +73,18 @@ export function ParticleStage({ children }: { children: ReactNode }) {
       stageRef.current = null;
       delete hero.dataset.phase;
     };
-  }, []);
+  }, [expectsCards]);
 
   return (
     <section ref={heroRef} className={s.hero} aria-labelledby="landing-title">
-      <canvas ref={canvasRef} className={s.canvas} role="img" aria-label="흩어져 떠다니던 점들이 모여 작품 카드가 줄지어 놓인 아카이브 격자를 이루는 그림" />
+      {/* 장식이다. 작품 정보는 아래 카드의 실제 링크와 이미지가 전한다. */}
+      <canvas ref={canvasRef} className={s.canvas} aria-hidden />
       <div className={`container ${s.inner}`}>
         <div className={s.copy}>{children}</div>
         <div className={s.stage}>
-          <div ref={plotRef} className={s.plot} aria-hidden />
+          <div ref={plotRef} className={s.plot}>
+            <CardsContext.Provider value={registerCards}>{cards}</CardsContext.Provider>
+          </div>
           <div className={s.stageFoot}>
             <ol className={s.steps} aria-hidden>
               {STEPS.map((step) => (
