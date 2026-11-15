@@ -17,7 +17,7 @@ import { setMemberAdmin, setMemberRole } from "@/lib/members";
 import { isRole } from "@/lib/roles";
 import { createProjectPost, deleteProjectPost } from "@/lib/content/posts";
 import { WORK_STATUS_LABEL, type WorkStatus } from "@/lib/content/types";
-import { clientIp, rateLimit } from "@/lib/security";
+import { clientIp, rateLimit, uploadRateLimit } from "@/lib/security";
 import { saveThumbnail, UploadError } from "@/lib/uploads";
 
 async function thumbnailFrom(fd: FormData): Promise<{ path?: string | null; error?: string }> {
@@ -43,7 +43,7 @@ export async function submitWorkAction(_prev: WorkFormState, fd: FormData): Prom
   const values = readMemberWorkForm(fd, member.name);
   // 봇이 채우는 숨김 필드
   if (String(fd.get("website") ?? "")) return { values, errors: { form: "제출할 수 없어요." } };
-  if (!rateLimit(`submit:${await clientIp()}`, 6, 60 * 60 * 1000)) {
+  if (!uploadRateLimit("submit", member)) {
     return { values, errors: { form: "짧은 시간에 너무 많이 제출했어요. 잠시 뒤 다시 시도해 주세요." } };
   }
   const v = validateWork(values);

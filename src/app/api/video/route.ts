@@ -1,6 +1,6 @@
 import { isAdmin } from "@/lib/admin";
 import { currentMember } from "@/lib/auth";
-import { clientIp, rateLimit } from "@/lib/security";
+import { uploadRateLimit } from "@/lib/security";
 import { saveVideo, UploadError } from "@/lib/uploads";
 import { MAX_VIDEO_BYTES, MAX_VIDEO_MB } from "@/lib/video";
 
@@ -20,8 +20,9 @@ export async function POST(request: Request) {
   }
 
   const member = await currentMember();
-  if (!member && !(await isAdmin())) return Response.json({ error: "로그인이 필요해요." }, { status: 401 });
-  if (!rateLimit(`video:${member?.id ?? (await clientIp())}`, 10, 60 * 60 * 1000)) {
+  const admin = member?.isAdmin || await isAdmin();
+  if (!member && !admin) return Response.json({ error: "로그인이 필요해요." }, { status: 401 });
+  if (!admin && member && !uploadRateLimit("video", member)) {
     return Response.json({ error: "짧은 시간에 너무 많이 올렸어요. 잠시 뒤 다시 시도해 주세요." }, { status: 429 });
   }
 

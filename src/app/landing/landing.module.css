@@ -1,0 +1,291 @@
+/* 랜딩 — 색·간격은 globals.css 토큰만 쓴다(CONSTITUTION.md §5). 그림자·그라데이션 없음. */
+
+/* ── 히어로: 캔버스가 영역 전체를 덮고, 글과 격자 자리가 그 위에 놓인다 ── */
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-bottom: var(--stroke-default) solid var(--color-border-strong);
+}
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.inner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 6fr) minmax(0, 7fr);
+  align-items: center;
+  gap: var(--space-12);
+  min-height: min(calc(100dvh - var(--header-h)), 820px);
+  padding-top: var(--space-16);
+  padding-bottom: var(--space-16);
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-5);
+}
+.title {
+  font-size: clamp(32px, 3.6vw, 48px);
+  line-height: 1.24;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.lead {
+  max-width: 480px;
+  color: var(--color-text-secondary);
+}
+.ctas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+/* 격자가 완성될 자리. 비어 있는 상자이고, 점은 캔버스가 이 좌표에 그린다. */
+.plot {
+  height: clamp(380px, 54vh, 520px);
+}
+.stageFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: var(--stroke-default) solid var(--color-border-default);
+}
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.04em;
+  color: var(--color-text-tertiary);
+}
+.steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 200ms ease;
+}
+.steps li::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border: var(--stroke-default) solid currentColor;
+  border-radius: var(--radius-full);
+}
+.hero[data-phase="scattered"] .steps [data-step="scattered"],
+.hero[data-phase="gathering"] .steps [data-step="gathering"],
+.hero[data-phase="archive"] .steps [data-step="archive"] {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+.hero[data-phase="scattered"] .steps [data-step="scattered"]::before,
+.hero[data-phase="gathering"] .steps [data-step="gathering"]::before,
+.hero[data-phase="archive"] .steps [data-step="archive"]::before {
+  border-color: var(--color-bg-accent);
+  background: var(--color-bg-accent);
+}
+.replay {
+  flex: none;
+  padding: var(--space-2) 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.replay:hover {
+  color: var(--color-text-primary);
+}
+.hint {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--color-text-tertiary);
+}
+
+/* ── 본문 섹션 ── */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding-top: var(--space-16);
+}
+.sectionHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-bottom: var(--space-4);
+  border-bottom: var(--stroke-default) solid var(--color-border-strong);
+}
+
+/* 용도 색인: 캔버스의 점 색과 같은 토큰을 쓴다 */
+.purposes {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: var(--stroke-default) solid var(--color-border-default);
+  border-left: var(--stroke-default) solid var(--color-border-default);
+}
+.purposes > li {
+  min-width: 0;
+  border-right: var(--stroke-default) solid var(--color-border-default);
+  border-bottom: var(--stroke-default) solid var(--color-border-default);
+}
+.purpose {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100%;
+  padding: var(--space-5);
+  background: var(--color-bg-surface);
+}
+.purpose:hover {
+  background: var(--color-bg-subtle);
+}
+.purposeName {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+}
+.swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: currentColor;
+}
+.purpose[data-purpose="class"] .swatch {
+  color: var(--color-purpose-class-fg);
+}
+.purpose[data-purpose="work"] .swatch {
+  color: var(--color-purpose-work-fg);
+}
+.purpose[data-purpose="play"] .swatch {
+  color: var(--color-purpose-play-fg);
+}
+.purpose[data-purpose="other"] .swatch {
+  color: var(--color-purpose-other-fg);
+}
+.purposeHint {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--color-text-secondary);
+}
+.purposeGo {
+  margin-top: auto;
+  padding-top: var(--space-3);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  color: var(--color-text-accent);
+}
+.purpose:hover .purposeGo {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* 원칙 */
+.principles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-8) var(--space-12);
+}
+.principles > li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.principles p {
+  color: var(--color-text-secondary);
+}
+.principleNo {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--color-text-tertiary);
+}
+.more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  padding-top: var(--space-4);
+  border-top: var(--stroke-default) solid var(--color-border-default);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--color-text-accent);
+}
+.more a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── 반응형 ── */
+@media (max-width: 959px) {
+  .inner {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-8);
+    min-height: 0;
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-8);
+  }
+  .plot {
+    height: clamp(260px, 42vh, 340px);
+  }
+  .purposes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .principles {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-6);
+  }
+}
+
+@media (max-width: 559px) {
+  .inner {
+    padding-top: var(--space-8);
+  }
+  .section {
+    padding-top: var(--space-12);
+  }
+  .purposes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 움직임 줄이기: 완성된 격자만 정지 화면으로 보여 준다. 조작 안내와 다시 보기 버튼은 감춘다. */
+@media (prefers-reduced-motion: reduce) {
+  .replay,
+  .hint {
+    display: none;
+  }
+  .steps li {
+    transition: none;
+  }
+}
