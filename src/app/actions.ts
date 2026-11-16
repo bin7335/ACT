@@ -19,11 +19,21 @@ import { createProjectPost, deleteProjectPost } from "@/lib/content/posts";
 import { WORK_STATUS_LABEL, type WorkStatus } from "@/lib/content/types";
 import { clientIp, rateLimit, uploadRateLimit } from "@/lib/security";
 import { saveThumbnail, UploadError } from "@/lib/uploads";
+import { VIDEO_POSTER_FIELD } from "@/lib/video-poster";
 
-async function thumbnailFrom(fd: FormData): Promise<{ path?: string | null; error?: string }> {
+/**
+ * 올린 대표 이미지를 저장한다. 따로 올리지 않았고 작품에 대표 이미지가 없으면,
+ * 영상 업로드 때 브라우저가 뽑아 보낸 장면(video_poster)을 대신 쓴다.
+ */
+async function thumbnailFrom(fd: FormData, hasThumbnail: () => boolean | Promise<boolean> = () => false): Promise<{ path?: string | null; error?: string }> {
   if (fd.get("remove_thumbnail") === "on") return { path: null };
   const file = fd.get("thumbnail");
-  if (!(file instanceof File) || file.size === 0) return {};
+  if (!(file instanceof File) || file.size === 0) {
+    const poster = fd.get(VIDEO_POSTER_FIELD);
+    if (!(poster instanceof File) || poster.size === 0 || (await hasThumbnail())) return {};
+    // 자동으로 뽑은 장면이 문제여도 제출을 막지 않는다. 기본 썸네일로 남는다.
+    return saveThumbnail(poster).then((path) => ({ path }), () => ({}));
+  }
   try {
     return { path: await saveThumbnail(file) };
   } catch (e) {
@@ -67,7 +77,7 @@ export async function memberEditWorkAction(slug: string, prev: WorkFormState, fd
   const values = readMemberWorkForm(fd, member.name, valuesFromWork(work));
   const v = validateWork(values);
   if ("errors" in v) return { values, errors: v.errors };
-  const thumb = await thumbnailFrom(fd);
+  const thumb = await thumbnailFrom(fd, () => !!work.thumbnail);
   if (thumb.error) return { values, errors: { thumbnail: thumb.error } };
   await updateWork(slug, v.data, { thumbnail: thumb.path, ownerId: member.id });
   if (thumb.path === undefined) fillThumbnailLater(slug);
@@ -95,7 +105,7 @@ export async function adminEditWorkAction(slug: string, _prev: WorkFormState, fd
   if (!(await isAdmin())) return { values, errors: { form: "운영진 로그인이 필요해요." } };
   const v = validateWork(values);
   if ("errors" in v) return { values, errors: v.errors };
-  const thumb = await thumbnailFrom(fd);
+  const thumb = await thumbnailFrom(fd, async () => !!(await getAnyWork(slug))?.thumbnail);
   if (thumb.error) return { values, errors: { thumbnail: thumb.error } };
   await updateWork(slug, v.data, { thumbnail: thumb.path });
   if (thumb.path === undefined) fillThumbnailLater(slug);

@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { MAX_VIDEO_BYTES, MAX_VIDEO_MB, MAX_VIDEO_SOURCE_BYTES, MAX_VIDEO_SOURCE_MB } from "@/lib/video";
+import { VIDEO_POSTER_FIELD } from "@/lib/video-poster";
 import f from "./form.module.css";
 
 const formatSize = (bytes: number) => (bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))}KB` : `${(bytes / 1024 / 1024).toFixed(1)}MB`);
@@ -20,6 +21,7 @@ export function VideoUpload({ initialUrl = "", name = "link_url" }: { initialUrl
   const [error, setError] = useState<string | null>(null);
   const xhrRef = useRef<XMLHttpRequest | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const posterRef = useRef<HTMLInputElement | null>(null);
   const uid = useId();
 
   useEffect(
@@ -36,6 +38,20 @@ export function VideoUpload({ initialUrl = "", name = "link_url" }: { initialUrl
     xhrRef.current?.abort();
     xhrRef.current = null;
     setPhase(null);
+    setPoster(null);
+  }
+
+  /** 영상에서 뽑은 장면을 숨은 파일 필드에 담아 폼과 함께 보낸다. 대표 이미지를 따로 안 올렸을 때 서버가 쓴다. */
+  function setPoster(file: File | null) {
+    const input = posterRef.current;
+    if (!input) return;
+    try {
+      const data = new DataTransfer();
+      if (file) data.items.add(file);
+      input.files = data.files;
+    } catch {
+      // 파일 필드를 채울 수 없는 브라우저에서는 자동 대표 이미지 없이 진행한다.
+    }
   }
 
   async function start(file: File | undefined) {
@@ -53,6 +69,12 @@ export function VideoUpload({ initialUrl = "", name = "link_url" }: { initialUrl
       const { compressVideo } = await import("@/lib/video-compress");
       const { blob, compressed } = await compressVideo(file, { signal: abort.signal, onProgress: setProgress });
       if (abort.signal.aborted) return;
+      // 올리는 동안 대표 이미지로 쓸 장면을 뽑아 둔다. 실패해도 업로드는 그대로 간다.
+      setPoster(null);
+      void import("@/lib/video-poster").then(async ({ captureVideoPoster }) => {
+        const poster = await captureVideoPoster(blob);
+        if (!abort.signal.aborted) setPoster(poster);
+      });
       upload(blob, compressed ? file.size : null);
     } catch (err) {
       if (abort.signal.aborted) return;
@@ -108,6 +130,7 @@ export function VideoUpload({ initialUrl = "", name = "link_url" }: { initialUrl
   return (
     <div className={f.videoUpload}>
       <input type="hidden" name={name} value={url} />
+      <input ref={posterRef} type="file" name={VIDEO_POSTER_FIELD} hidden tabIndex={-1} aria-hidden="true" />
       {url ? (
         <div className={f.videoState}>
           <span className={f.videoName}>
@@ -122,6 +145,7 @@ export function VideoUpload({ initialUrl = "", name = "link_url" }: { initialUrl
               setUrl("");
               setSize(null);
               setSavedFrom(null);
+              setPoster(null);
             }}
           >
             ×
@@ -149,7 +173,7 @@ export function VideoUpload({ initialUrl = "", name = "link_url" }: { initialUrl
           }}
         />
       )}
-      <p className={f.hint}>MP4·MOV·WebM 파일. {MAX_VIDEO_MB}MB를 넘으면 이 기기에서 자동으로 압축해서 올려요. 끝날 때까지 창을 닫지 마세요.</p>
+      <p className={f.hint}>MP4·MOV·WebM 파일. {MAX_VIDEO_MB}MB를 넘으면 이 기기에서 자동으로 압축해서 올려요. 대표 이미지를 따로 올리지 않으면 영상의 한 장면을 씁니다. 끝날 때까지 창을 닫지 마세요.</p>
       {error && (
         <p className={f.error} role="alert">
           {error}
