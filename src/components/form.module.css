@@ -221,6 +221,11 @@
   height: 32px;
   font-size: 16px;
 }
+.videoPhase {
+  flex: none;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
 .progress {
   flex: 1;
   min-width: 0;

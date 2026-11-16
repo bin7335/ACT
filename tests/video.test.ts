@@ -67,3 +67,29 @@ test("큰 영상은 멀티파트로 올리고 크기와 내용이 그대로 저�
   assert.deepEqual(new Uint8Array(await stored!.arrayBuffer()), bytes);
   await deleteVideo(saved.url);
 });
+
+test("영상 압축 계획: 상한 안이면 그대로, 넘으면 1080p·상한 안으로", async () => {
+  const { MAX_VIDEO_BYTES, planCompression } = await import("../src/lib/video");
+  const MB = 1024 * 1024;
+
+  // 상한 안이면 4K·고비트레이트여도 건드리지 않는다.
+  assert.deepEqual(planCompression({ bytes: 6 * MB, duration: 60, width: 1280, height: 720, hasAudio: true, playable: true }), { action: "keep" });
+  assert.deepEqual(planCompression({ bytes: 89 * MB, duration: 20, width: 3840, height: 2160, hasAudio: true, playable: true }), { action: "keep" });
+  // 같은 파일이라도 그대로 재생할 수 없는 형식(MOV)이면 변환한다.
+  assert.equal(planCompression({ bytes: 6 * MB, duration: 60, width: 1280, height: 720, hasAudio: true, playable: false }).action, "compress");
+
+  // 4K 세로 영상은 비율을 지켜 1080p로 줄인다.
+  const portrait = planCompression({ bytes: 400 * MB, duration: 60, width: 2160, height: 3840, hasAudio: true, playable: true });
+  assert.deepEqual(portrait, { action: "compress", width: 1080, height: 1920, videoBitrate: 4_500_000, audioBitrate: 128_000 });
+
+  // 길면 상한에 맞춰 비트레이트를 낮춘다.
+  const long = planCompression({ bytes: 900 * MB, duration: 600, width: 1920, height: 1080, hasAudio: true, playable: true });
+  assert.equal(long.action, "compress");
+  if (long.action === "compress") {
+    assert.ok(long.videoBitrate < 4_500_000);
+    assert.ok(((long.videoBitrate + long.audioBitrate) * 600) / 8 < MAX_VIDEO_BYTES);
+  }
+
+  // 너무 길어 볼 만한 화질로 상한을 맞출 수 없으면 거절한다.
+  assert.deepEqual(planCompression({ bytes: 1900 * MB, duration: 3 * 3600, width: 1920, height: 1080, hasAudio: true, playable: true }), { action: "too-long" });
+});

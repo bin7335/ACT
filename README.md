@@ -8,7 +8,7 @@
 - Next.js 16 (App Router, Cache Components), React 19, TypeScript
 - SQLite (better-sqlite3) + Drizzle ORM — 마이그레이션은 서버 시작 시 자동 적용
 - 썸네일: sharp로 16:10 WebP(1280/640) 변환 후 `DATA_DIR/uploads`에 저장, `/media/*`로 제공
-- 영상: 직접 올린 파일(MP4/WebM, 90MB 이하)을 `DATA_DIR/uploads/videos`에 저장, `/media/video/*`로 Range 재생
+- 영상: 직접 올린 파일(MP4/MOV/WebM)은 90MB를 넘을 때만 올리는 브라우저에서 1080p 이하 MP4로 자동 압축(`src/lib/video-compress.ts`, WebCodecs)하고, 90MB 이하만 `DATA_DIR/uploads/videos`에 저장, `/media/video/*`로 Range 재생
 - 스타일: CSS Modules + `globals.css`의 디자인 토큰(Figma 변수와 1:1)
 
 ## 기능
