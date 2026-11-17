@@ -1,0 +1,25 @@
+# main으로 들어오는 PR은 develop에서 온 것만 허용한다. main 보호 규칙이 이 검사를 필수로 요구한다.
+name: PR base check
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+
+permissions: {}
+
+jobs:
+  pr-base:
+    name: pr-base
+    runs-on: ubuntu-latest
+    steps:
+      - name: main은 develop에서 오는 PR만 받는다
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
+          SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+        run: |
+          if [ "$BASE" = "main" ] && { [ "$HEAD" != "develop" ] || [ "$SAME_REPO" != "true" ]; }; then
+            echo "::error::main에는 이 저장소의 develop 브랜치 PR만 합칠 수 있습니다. PR 대상을 develop으로 바꿔 주세요."
+            exit 1
+          fi
+          echo "PR 대상 확인: $HEAD -> $BASE"
