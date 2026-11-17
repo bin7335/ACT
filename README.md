@@ -62,7 +62,6 @@ npm run deploy               # opennextjs-cloudflare build && deploy
 
 Worker `act`, D1 `act-db`, R2 `act-uploads`, Images 바인딩은 `wrangler.jsonc`에 있다. 시크릿은 Infisical prod에서 `wrangler secret`으로 넣는다.
 
-
 ## 환경변수
 
 `*` 표시는 Worker 시크릿(원본은 Infisical `ACT` prod)이다.
