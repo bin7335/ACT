@@ -2,6 +2,7 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
+import { textList } from "@/lib/db/text-list";
 
 // next/headers는 요청 문맥에서만 쓸 수 있어 필요한 함수 안에서 가져온다(단위 테스트에서도 이 파일을 읽을 수 있게).
 
@@ -45,7 +46,7 @@ export async function likeCounts(slugs: string[]): Promise<Map<string, number>> 
   if (!slugs.length) return new Map();
   const rows = await db.select({ slug: schema.workLike.workSlug, n: sql<number>`count(*)` })
     .from(schema.workLike)
-    .where(inArray(schema.workLike.workSlug, slugs))
+    .where(inArray(schema.workLike.workSlug, textList(slugs)))
     .groupBy(schema.workLike.workSlug)
     .all();
   return new Map(rows.map((r) => [r.slug, r.n]));
@@ -65,7 +66,7 @@ export async function bookmarkCounts(slugs: string[]): Promise<Map<string, numbe
   if (!slugs.length) return new Map();
   const rows = await db.select({ slug: schema.workBookmark.workSlug, n: sql<number>`count(*)` })
     .from(schema.workBookmark)
-    .where(inArray(schema.workBookmark.workSlug, slugs))
+    .where(inArray(schema.workBookmark.workSlug, textList(slugs)))
     .groupBy(schema.workBookmark.workSlug)
     .all();
   return new Map(rows.map((r) => [r.slug, r.n]));
@@ -92,9 +93,9 @@ export async function visitReactions(slugs: string[]) {
   if (!isValidVisitor(visitor) || !slugs.length) return { liked: new Set<string>(), bookmarked: new Set<string>() };
   const [liked, bookmarked] = await Promise.all([
     db.select({ slug: schema.workLike.workSlug }).from(schema.workLike)
-      .where(and(eq(schema.workLike.clientId, visitor), inArray(schema.workLike.workSlug, slugs))).all(),
+      .where(and(eq(schema.workLike.clientId, visitor), inArray(schema.workLike.workSlug, textList(slugs)))).all(),
     db.select({ slug: schema.workBookmark.workSlug }).from(schema.workBookmark)
-      .where(and(eq(schema.workBookmark.clientId, visitor), inArray(schema.workBookmark.workSlug, slugs))).all(),
+      .where(and(eq(schema.workBookmark.clientId, visitor), inArray(schema.workBookmark.workSlug, textList(slugs)))).all(),
   ]);
   return { liked: new Set(liked.map((r) => r.slug)), bookmarked: new Set(bookmarked.map((r) => r.slug)) };
 }

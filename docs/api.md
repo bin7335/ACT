@@ -3,7 +3,7 @@
 에이전트나 스크립트가 회원 계정으로 작품을 등록할 때 쓰는 API입니다.
 토큰은 **계정 설정 → API 토큰**에서 만들고, 만든 직후 한 번만 표시됩니다.
 
-- 기본 주소: `https://act.aura-board.com`
+- 기본 주소: `https://aict.app`
 - 인증: `Authorization: Bearer <토큰>` (토큰은 `act_`로 시작)
 - 응답: JSON, `Cache-Control: no-store`
 
@@ -40,7 +40,7 @@
 ### 예시
 
 ```bash
-curl -X POST https://act.aura-board.com/api/works \
+curl -X POST https://aict.app/api/works \
   -H "Authorization: Bearer act_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{

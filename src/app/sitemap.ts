@@ -7,7 +7,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [works, makers] = await Promise.all([listPublishedSlugs(), listMakers()]);
   const u = (path: string) => `${site.url}${path}`;
   return [
-    { url: u("/"), changeFrequency: "daily", priority: 1 },
+    { url: u("/"), changeFrequency: "monthly", priority: 1 },
     { url: u("/works"), changeFrequency: "daily", priority: 0.9 },
     { url: u("/makers"), changeFrequency: "weekly" },
     { url: u("/about"), changeFrequency: "monthly" },

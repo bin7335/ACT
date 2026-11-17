@@ -1,0 +1,433 @@
+/* 랜딩 — 색·간격은 globals.css 토큰만 쓴다(CONSTITUTION.md §5). 그림자·그라데이션 없음. */
+
+/*
+ * ── 히어로: 캔버스가 영역 전체를 덮는다 ──
+ * 쌓는 순서는 아래부터 작품 카드(원본 썸네일) → 캔버스(색 입자) → 글·버튼이다.
+ * 캔버스는 포인터를 받지 않으므로 그 아래 카드 링크를 그대로 누를 수 있다.
+ */
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-bottom: var(--stroke-default) solid var(--color-border-strong);
+}
+.canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.inner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 6fr) minmax(0, 7fr);
+  align-items: center;
+  gap: var(--space-12);
+  min-height: min(calc(100dvh - var(--header-h)), 820px);
+  padding-top: var(--space-16);
+  padding-bottom: var(--space-16);
+}
+
+.copy {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-5);
+}
+.title {
+  font-size: clamp(32px, 3.6vw, 48px);
+  line-height: 1.24;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.lead {
+  max-width: 480px;
+  color: var(--color-text-secondary);
+}
+.ctas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+/* 점이 모여 완성될 자리. 작품 카드가 있으면 그 썸네일 위로, 없으면 이 상자 안의 추상 격자로 모인다. */
+.plot {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: clamp(380px, 54vh, 520px);
+}
+
+/*
+ * 작품 카드 — 실제 공개 작품의 썸네일과 /works/{slug} 링크.
+ * 캔버스 엔진이 루트에 data-mode, 카드에 data-shown, 썸네일에 data-failed를 붙인다(engine.ts 머리말).
+ *   (없음)   엔진이 아직 붙지 않음: 가려 두되, 끝내 붙지 않으면 8초 뒤 스스로 드러난다.
+ *   wait     이미지를 기다리는 중: 가림
+ *   thumbs   점이 모인 카드부터 data-shown으로 드러남
+ *   abstract 쓸 수 있는 이미지가 없음: 카드를 감추고 추상 격자를 그린다
+ */
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.cards[data-mode="abstract"] {
+  visibility: hidden;
+}
+.cardsHead {
+  padding-bottom: var(--space-2);
+  border-bottom: var(--stroke-default) solid var(--color-border-strong);
+}
+.cardList {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+.cardItem {
+  min-width: 0;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.cardThumb {
+  display: block;
+  aspect-ratio: 16 / 10;
+  border: var(--stroke-default) solid var(--color-border-default);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  background: var(--color-bg-subtle);
+}
+.card:hover .cardThumb {
+  border-color: var(--color-border-strong);
+}
+.cardThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* 깨진 이미지는 감추고 빈 썸네일 상자와 제목만 남긴다. */
+.cardThumb[data-failed="true"] img {
+  display: none;
+}
+.cardTitle {
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card:hover .cardTitle {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* 가림과 드러남. 전환 시간은 engine.ts의 REVEAL_MS와 같다. */
+.cardsHead,
+.cardThumb,
+.cardTitle {
+  opacity: 0;
+  transition: opacity 800ms ease;
+}
+.cards:not([data-mode]) .cardsHead,
+.cards:not([data-mode]) .cardThumb,
+.cards:not([data-mode]) .cardTitle {
+  animation: cardsLate 400ms ease 8s forwards;
+}
+.cards[data-mode="thumbs"] .cardsHead,
+.cards[data-static="true"] .cardsHead,
+.cards[data-static="true"] .cardThumb,
+.cards[data-static="true"] .cardTitle,
+.cardItem[data-shown="true"] .cardThumb,
+.cardItem[data-shown="true"] .cardTitle,
+.card:focus-visible .cardThumb,
+.card:focus-visible .cardTitle {
+  opacity: 1;
+}
+@keyframes cardsLate {
+  to {
+    opacity: 1;
+  }
+}
+
+.stageFoot {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: var(--stroke-default) solid var(--color-border-default);
+}
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.04em;
+  color: var(--color-text-tertiary);
+}
+.steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 200ms ease;
+}
+.steps li::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border: var(--stroke-default) solid currentColor;
+  border-radius: var(--radius-full);
+}
+.hero[data-phase="scattered"] .steps [data-step="scattered"],
+.hero[data-phase="gathering"] .steps [data-step="gathering"],
+.hero[data-phase="archive"] .steps [data-step="archive"] {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+.hero[data-phase="scattered"] .steps [data-step="scattered"]::before,
+.hero[data-phase="gathering"] .steps [data-step="gathering"]::before,
+.hero[data-phase="archive"] .steps [data-step="archive"]::before {
+  border-color: var(--color-bg-accent);
+  background: var(--color-bg-accent);
+}
+.replay {
+  flex: none;
+  padding: var(--space-2) 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.replay:hover {
+  color: var(--color-text-primary);
+}
+.hint {
+  position: relative;
+  z-index: 2;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--color-text-tertiary);
+}
+
+/* ── 본문 섹션 ── */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding-top: var(--space-16);
+}
+.sectionHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-bottom: var(--space-4);
+  border-bottom: var(--stroke-default) solid var(--color-border-strong);
+}
+
+/* 용도 색인: 캔버스의 점 색과 같은 토큰을 쓴다 */
+.purposes {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: var(--stroke-default) solid var(--color-border-default);
+  border-left: var(--stroke-default) solid var(--color-border-default);
+}
+.purposes > li {
+  min-width: 0;
+  border-right: var(--stroke-default) solid var(--color-border-default);
+  border-bottom: var(--stroke-default) solid var(--color-border-default);
+}
+.purpose {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100%;
+  padding: var(--space-5);
+  background: var(--color-bg-surface);
+}
+.purpose:hover {
+  background: var(--color-bg-subtle);
+}
+.purposeName {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+}
+.swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: currentColor;
+}
+.purpose[data-purpose="class"] .swatch {
+  color: var(--color-purpose-class-fg);
+}
+.purpose[data-purpose="work"] .swatch {
+  color: var(--color-purpose-work-fg);
+}
+.purpose[data-purpose="play"] .swatch {
+  color: var(--color-purpose-play-fg);
+}
+.purpose[data-purpose="other"] .swatch {
+  color: var(--color-purpose-other-fg);
+}
+.purposeHint {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--color-text-secondary);
+}
+.purposeGo {
+  margin-top: auto;
+  padding-top: var(--space-3);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  color: var(--color-text-accent);
+}
+.purpose:hover .purposeGo {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* 원칙 */
+.principles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-8) var(--space-12);
+}
+.principles > li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.principles p {
+  color: var(--color-text-secondary);
+}
+.principleNo {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--color-text-tertiary);
+}
+.more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  padding-top: var(--space-4);
+  border-top: var(--stroke-default) solid var(--color-border-default);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--color-text-accent);
+}
+.more a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── 반응형 ── */
+@media (max-width: 959px) {
+  .inner {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-8);
+    min-height: 0;
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-8);
+  }
+  .plot {
+    min-height: clamp(260px, 42vh, 340px);
+  }
+  /* 한 단 배치: 카드는 두 줄(6장)까지만. 감춘 카드의 이미지는 받지 않는다(loading="lazy"). */
+  .cardItem:nth-child(n + 7) {
+    display: none;
+  }
+  .purposes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .principles {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-6);
+  }
+}
+
+@media (max-width: 559px) {
+  .inner {
+    padding-top: var(--space-8);
+  }
+  .section {
+    padding-top: var(--space-12);
+  }
+  /* 휴대폰: 2열 두 줄(4장). 입자 수도 engine.ts의 particleCap이 줄인다. */
+  .cardList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+  .cardItem:nth-child(n + 5) {
+    display: none;
+  }
+  .purposes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/*
+ * 움직임 줄이기: 입자 없이 원본 썸네일과 링크를 정지 화면으로 보여 준다(카드가 없으면 완성된 추상 격자).
+ * 조작 안내와 다시 보기 버튼은 감춘다.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .replay,
+  .hint {
+    display: none;
+  }
+  .steps li {
+    transition: none;
+  }
+  .cards .cardsHead,
+  .cards .cardThumb,
+  .cards .cardTitle {
+    opacity: 1;
+    transition: none;
+    animation: none;
+  }
+}
+
+/* 스크립트가 꺼져 있으면 카드를 드러낼 엔진이 없다. 처음부터 보여 준다. */
+@media (scripting: none) {
+  .cards .cardsHead,
+  .cards .cardThumb,
+  .cards .cardTitle {
+    opacity: 1;
+    animation: none;
+  }
+}

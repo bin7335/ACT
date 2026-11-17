@@ -6,7 +6,7 @@ import { fillMissingThumbnail } from "@/lib/content/auto-thumbnail";
 import { validateWork } from "@/lib/content/form";
 import { createMemberWork } from "@/lib/content/submission";
 import { getWorksBySlugs } from "@/lib/content/queries";
-import { rateLimit } from "@/lib/security";
+import { uploadRateLimit } from "@/lib/security";
 
 // 즐겨찾기 목록용: 공개 작품만 반환한다.
 export async function GET(request: Request) {
@@ -29,7 +29,7 @@ function fail(error: string, status: number, fields?: Record<string, string>) {
 export async function POST(request: Request) {
   const member = await memberForToken(bearer(request));
   if (!member) return fail("유효하지 않은 API 토큰이에요. Authorization: Bearer <토큰> 헤더를 확인해 주세요.", 401);
-  if (!rateLimit(`api-work:${member.memberId}`, 30, 60 * 60 * 1000)) return fail("짧은 시간에 너무 많이 등록했어요. 잠시 뒤 다시 시도해 주세요.", 429);
+  if (!uploadRateLimit("submit", { ...member, id: member.memberId })) return fail("짧은 시간에 너무 많이 등록했어요. 잠시 뒤 다시 시도해 주세요.", 429);
 
   let body: unknown;
   try {
