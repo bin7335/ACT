@@ -166,7 +166,14 @@ export async function getLatestWorks(limit = 8): Promise<WorkSummary[]> {
   return summaries(await db.select().from(schema.work).where(published).orderBy(...newest).limit(limit).all());
 }
 
-export type PopularThumbnail = { slug: string; title: string; thumbnail: string; thumbnailAlt: string | null };
+/** 모바일 아케이드(/arcade) — 공개 작품 전체를 좋아요 많은 순으로. 동률은 최신순을 유지한다. */
+export async function getArcadeWorks(): Promise<WorkSummary[]> {
+  await connection();
+  const all = await summaries(await db.select().from(schema.work).where(published).orderBy(...newest).all());
+  return [...all].sort((a, b) => b.likeCount - a.likeCount);
+}
+
+export type PopularThumbnail ={ slug: string; title: string; thumbnail: string; thumbnailAlt: string | null };
 
 /**
  * 썸네일이 있는 공개 작품을 좋아요 많은 순으로 고른다(같으면 최신순 — getArchive의 likes 정렬과 같은 순서).

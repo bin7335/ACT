@@ -1,0 +1,607 @@
+/*
+ * 모바일 아케이드 — 게임 콘솔 라이브러리 화면. 데스크톱 웹(미니멀 에디토리얼)과 일부러 갈라 놓은 화면이라
+ * 색·그림자·움직임을 이 파일 안에서만 따로 정한다(사용자 지시).
+ */
+@property --reserve {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+
+.root {
+  --ink: #10142a;
+  --navy: #141b45;
+  --blue-1: #2747c9;
+  --blue-2: #3f6ef0;
+  --blue-3: #8fb4ff;
+  --yellow: #ffd400;
+  --mint: #5be08a;
+  --hud-h: 52px;
+  --gap: 12px;
+  --rows: 3;
+  --panel-h: 84px;
+  --reserve: 0px;
+  --safe-l: max(16px, env(safe-area-inset-left, 0px));
+  --safe-r: max(16px, env(safe-area-inset-right, 0px));
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  background:
+    radial-gradient(120% 80% at 50% 110%, rgba(255, 255, 255, 0.45), transparent 60%),
+    linear-gradient(160deg, var(--blue-1) 0%, var(--blue-2) 45%, var(--blue-3) 100%);
+  transition: --reserve 320ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.root[data-open] {
+  --reserve: calc(var(--panel-h) + var(--safe-b));
+}
+
+/* 루트 레이아웃의 헤더·푸터는 이 화면 뒤에 깔린다. 바깥 문서는 스크롤하지 않는다. */
+:global(html):has(.root),
+:global(html):has(.root) body {
+  overflow: hidden;
+  background: #2747c9;
+}
+
+/* ── 배경 도형 ─────────────────────────────────────────── */
+.bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.shape {
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  border: 3px solid rgba(255, 255, 255, 0.22);
+  border-radius: 14px;
+  animation: drift 18s ease-in-out infinite alternate;
+  animation-delay: calc(var(--k) * -2.3s);
+}
+.shape:nth-child(1) { left: 4%; top: 14%; }
+.shape:nth-child(2) { left: 22%; top: 70%; width: 60px; height: 60px; }
+.shape:nth-child(3) { left: 38%; top: 6%; width: 130px; height: 130px; }
+.shape:nth-child(4) { left: 58%; top: 58%; }
+.shape:nth-child(5) { left: 74%; top: 10%; width: 56px; height: 56px; }
+.shape:nth-child(6) { left: 88%; top: 44%; width: 110px; height: 110px; }
+.shape:nth-child(7) { left: 10%; top: 42%; width: 44px; height: 44px; border-radius: 50%; }
+.shape:nth-child(8) { left: 66%; top: 32%; width: 40px; height: 40px; border-radius: 50%; }
+.shape:nth-child(9) { left: 48%; top: 84%; width: 70px; height: 70px; }
+@keyframes drift {
+  from { transform: translate3d(0, 0, 0) rotate(-12deg); }
+  to { transform: translate3d(18px, -22px, 0) rotate(24deg); }
+}
+
+/* ── 떠 있는 HUD ────────────────────────────────────────── */
+.hudLeft,
+.hudRight {
+  position: absolute;
+  top: calc(var(--safe-t) + 10px);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hudLeft {
+  left: var(--safe-l);
+  padding: 4px 12px 4px 4px;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 3px 0 var(--ink);
+}
+.hudRight {
+  right: var(--safe-r);
+}
+.logo {
+  display: grid;
+  place-items: center;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--yellow);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.hudTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.count {
+  min-width: 22px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+.hudBtn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
+  cursor: pointer;
+  transition: transform 80ms ease, box-shadow 80ms ease;
+}
+.hudBtn:active {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.hudBtn[aria-pressed="false"] {
+  background: #e3e7f5;
+  color: #6a7193;
+}
+
+/* ── 타일 카탈로그 ──────────────────────────────────────── */
+.scroller {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: calc(var(--safe-t) + var(--hud-h) + 10px) var(--safe-r) calc(14px + var(--reserve)) var(--safe-l);
+  scroll-padding: calc(var(--safe-t) + var(--hud-h)) var(--safe-r) calc(14px + var(--reserve)) var(--safe-l);
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.scroller::-webkit-scrollbar {
+  display: none;
+}
+
+/* 가로(기본): 행 수를 고정하고 옆으로 넘긴다 — 콘솔 홈 화면처럼 */
+.grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
+  grid-auto-columns: calc((100dvh - var(--safe-t) - var(--hud-h) - 24px - var(--reserve) - (var(--rows) - 1) * var(--gap)) / var(--rows) * 1.08);
+  gap: var(--gap);
+  height: 100%;
+  width: max-content;
+  margin: 0;
+  padding: 6px 6px 10px;
+  list-style: none;
+}
+.grid > li {
+  min-height: 0;
+  animation: deal 420ms cubic-bezier(0.2, 1.2, 0.4, 1) both;
+  animation-delay: calc(min(var(--i, 0), 24) * 22ms);
+}
+@keyframes deal {
+  from { opacity: 0; transform: translateY(16px) scale(0.9); }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .root {
+    --rows: 2;
+    --hud-h: 44px;
+    --gap: 10px;
+  }
+}
+
+/* 세로: 3열로 깔고 아래로 내린다 */
+@media (orientation: portrait) {
+  .root {
+    --panel-h: 168px;
+  }
+  .scroller {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+  .grid {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: none;
+    grid-auto-columns: auto;
+    grid-auto-rows: auto;
+    width: auto;
+    height: auto;
+  }
+  .grid > li {
+    aspect-ratio: 1 / 1.08;
+  }
+}
+@media (orientation: portrait) and (max-width: 340px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  padding: 5px;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 5px 0 var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 180ms cubic-bezier(0.2, 1.4, 0.4, 1),
+    box-shadow 180ms ease,
+    filter 200ms ease,
+    border-color 120ms ease;
+  outline: none;
+}
+.tile:active {
+  transform: translateY(3px) scale(0.97);
+  box-shadow: 0 2px 0 var(--ink);
+}
+.thumb {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 9px;
+  background: #e9edf8;
+}
+.thumb img,
+.panelThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+.fallback {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  word-break: keep-all;
+  overflow: hidden;
+}
+.tile[data-purpose="class"] .fallback,
+.panelThumb[data-purpose="class"] .fallback { background: #dfe7ff; color: #2f5bea; }
+.tile[data-purpose="work"] .fallback,
+.panelThumb[data-purpose="work"] .fallback { background: #ece3ff; color: #7442e0; }
+.tile[data-purpose="play"] .fallback,
+.panelThumb[data-purpose="play"] .fallback { background: #dbf4e3; color: #16834a; }
+.tile[data-purpose="other"] .fallback,
+.panelThumb[data-purpose="other"] .fallback { background: #eceae3; color: #474b52; }
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  min-width: 0;
+  padding: 0 2px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+}
+.labelText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+}
+[data-purpose="class"] .dot { background: #4a7be8; }
+[data-purpose="work"] .dot { background: #a27bff; }
+[data-purpose="play"] .dot { background: var(--mint); }
+[data-purpose="other"] .dot { background: #c9c6bd; }
+
+/* 선택 효과 — 튀어 오르며 커지고, 민트 테두리 + 모서리 브래킷이 깜박인다 */
+.tile[aria-pressed="true"] {
+  z-index: 2;
+  border-color: var(--ink);
+  transform: translateY(-6px) scale(1.07);
+  box-shadow:
+    0 0 0 3px var(--mint),
+    0 0 22px 6px rgba(91, 224, 138, 0.75),
+    0 9px 0 var(--ink);
+  animation: pop 360ms cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+@keyframes pop {
+  0% { transform: translateY(0) scale(0.94); }
+  55% { transform: translateY(-9px) scale(1.12); }
+  100% { transform: translateY(-6px) scale(1.07); }
+}
+.corners {
+  position: absolute;
+  inset: -12px;
+  pointer-events: none;
+  opacity: 0;
+  --c: var(--mint);
+  --l: 16px;
+  --w: 4px;
+  background:
+    linear-gradient(var(--c) 0 0) top left / var(--l) var(--w),
+    linear-gradient(var(--c) 0 0) top left / var(--w) var(--l),
+    linear-gradient(var(--c) 0 0) top right / var(--l) var(--w),
+    linear-gradient(var(--c) 0 0) top right / var(--w) var(--l),
+    linear-gradient(var(--c) 0 0) bottom left / var(--l) var(--w),
+    linear-gradient(var(--c) 0 0) bottom left / var(--w) var(--l),
+    linear-gradient(var(--c) 0 0) bottom right / var(--l) var(--w),
+    linear-gradient(var(--c) 0 0) bottom right / var(--w) var(--l);
+  background-repeat: no-repeat;
+}
+.tile[aria-pressed="true"] .corners {
+  opacity: 1;
+  animation: bracket 900ms ease-in-out infinite;
+}
+@keyframes bracket {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+.tile:focus-visible:not([aria-pressed="true"]) {
+  box-shadow: 0 0 0 3px var(--yellow), 0 5px 0 var(--ink);
+}
+/* 하나를 고르면 나머지는 살짝 물러난다 */
+.root[data-open] .tile:not([aria-pressed="true"]) {
+  filter: saturate(0.6) brightness(0.82);
+}
+
+/* 입장 연출 — 선택 타일이 번쩍이며 커지고 화면이 하얗게 번진다 */
+.root[data-launching] .tile[aria-pressed="true"] {
+  animation: launch 420ms ease-in forwards;
+}
+@keyframes launch {
+  40% { transform: translateY(-8px) scale(1.16); filter: brightness(1.4); }
+  100% { transform: translateY(-8px) scale(1.3); filter: brightness(2); opacity: 0.4; }
+}
+.root[data-launching]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: #fff;
+  pointer-events: none;
+  animation: flash 420ms ease-in forwards;
+}
+@keyframes flash {
+  from { opacity: 0; }
+  to { opacity: 0.85; }
+}
+
+.skeleton {
+  border: 3px solid rgba(16, 20, 42, 0.25);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.35);
+  animation: shimmer 1.2s ease-in-out infinite alternate;
+}
+@keyframes shimmer {
+  to { background: rgba(255, 255, 255, 0.6); }
+}
+.empty {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  margin: 0;
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ── 입장 패널 ──────────────────────────────────────────── */
+.panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  padding: 10px var(--safe-r) calc(10px + var(--safe-b)) var(--safe-l);
+  background: var(--navy);
+  border-top: 3px solid var(--yellow);
+  box-shadow: 0 -10px 30px rgba(8, 12, 40, 0.45);
+  color: #fff;
+  transform: translateY(110%);
+  transition: transform 300ms cubic-bezier(0.2, 1.25, 0.4, 1);
+}
+.root[data-open] .panel {
+  transform: translateY(0);
+}
+.panelInner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  height: calc(var(--panel-h) - 20px);
+  animation: slideIn 260ms cubic-bezier(0.2, 1.2, 0.4, 1);
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(14px); }
+}
+.panelThumb {
+  display: block;
+  height: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 2.5px solid #fff;
+  border-radius: 10px;
+  background: #e9edf8;
+}
+.panelInfo {
+  min-width: 0;
+}
+.panelTitle {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.panelMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  min-width: 0;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.chip,
+.chipGhost {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-weight: 700;
+  line-height: 18px;
+}
+.chip { background: #b39dff; color: var(--ink); }
+.chip[data-purpose="class"] { background: #8ea8ff; }
+.chip[data-purpose="play"] { background: var(--mint); }
+.chip[data-purpose="other"] { background: #dedbd2; }
+.chipGhost {
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  color: #dbe3ff;
+}
+.maker {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #c3cdf5;
+}
+.panelActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.likes {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  color: #ff9ab0;
+  white-space: nowrap;
+}
+.infoBtn,
+.startBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 42px;
+  padding: 0 16px;
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 80ms ease, box-shadow 80ms ease;
+}
+.infoBtn {
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 4px 0 #050817;
+}
+.startBtn {
+  padding: 0 22px;
+  background: var(--yellow);
+  color: var(--ink);
+  box-shadow: 0 4px 0 #050817, 0 0 0 0 rgba(255, 212, 0, 0.7);
+  animation: ready 1.4s ease-out infinite;
+}
+@keyframes ready {
+  0% { box-shadow: 0 4px 0 #050817, 0 0 0 0 rgba(255, 212, 0, 0.7); }
+  70%, 100% { box-shadow: 0 4px 0 #050817, 0 0 0 12px rgba(255, 212, 0, 0); }
+}
+.infoBtn:active,
+.startBtn:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 #050817;
+  animation: none;
+}
+.closeBtn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* 세로 패널 — 정보 위, 버튼 아래 두 줄 */
+@media (orientation: portrait) {
+  .panelInner {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: 1fr auto;
+    row-gap: 10px;
+  }
+  .panelThumb {
+    height: 72px;
+    grid-row: 1;
+  }
+  .panelActions {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .closeBtn {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: start;
+  }
+  .likes {
+    margin-right: auto;
+  }
+  .infoBtn,
+  .startBtn {
+    flex: 1;
+    justify-content: center;
+    height: 46px;
+  }
+  .startBtn {
+    flex: 2;
+  }
+  .panelMeta {
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .panelTitle {
+    font-size: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root,
+  .root * {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

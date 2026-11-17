@@ -6,6 +6,7 @@ import { ButtonLink } from "@/components/ui";
 import { getPopularThumbnails, type PopularThumbnail } from "@/lib/content/queries";
 import { WORK_PURPOSE_HINT, WORK_PURPOSE_LABEL, WORK_PURPOSES } from "@/lib/content/types";
 import { site } from "@/lib/site";
+import { MobileRedirect } from "./MobileRedirect";
 import { ParticleStage } from "./landing/ParticleStage";
 import { ThumbCards } from "./landing/ThumbCards";
 import s from "./landing/landing.module.css";
@@ -46,6 +47,8 @@ async function PopularCards() {
 export default function Home() {
   return (
     <>
+      {/* 휴대폰은 콘솔형 전용 화면(/arcade)으로 보낸다 */}
+      <MobileRedirect />
       <ParticleStage
         cards={
           <Suspense fallback={null}>
