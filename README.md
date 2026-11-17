@@ -62,9 +62,6 @@ npm run deploy               # opennextjs-cloudflare build && deploy
 
 Worker `act`, D1 `act-db`, R2 `act-uploads`, Images 바인딩은 `wrangler.jsonc`에 있다. 시크릿은 Infisical prod에서 `wrangler secret`으로 넣는다.
 
-### 레거시: VM 운영 (사용 중단)
-
-2026-11-14까지는 연구회 VM(Oracle Cloud)에서 SQLite·로컬 파일 저장소·Cloudflare Tunnel로 운영했다. 그 VM은 더 이상 쓰지 않으며 복구·배포 대상이 아니다. 당시 데이터(회원·작품)는 새 D1로 옮기지 않았다. VM용 배포 스크립트, systemd 유닛, SQLite 설정은 저장소에서 제거했으니 새로 만들거나 되살리지 않는다.
 
 ## 환경변수
 
