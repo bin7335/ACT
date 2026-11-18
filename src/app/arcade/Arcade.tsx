@@ -41,6 +41,8 @@ export function Arcade({ works }: { works: ArcadeWork[] | null }) {
   const muted = useSyncExternalStore(subscribeMuted, isMuted, () => false);
   const [launching, setLaunching] = useState(false);
   const tiles = useRef<(HTMLButtonElement | null)[]>([]);
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const draggedRef = useRef(false);
   const list = works ?? [];
   const current = sel !== null ? list[sel] : null;
 
@@ -134,6 +136,241 @@ export function Arcade({ works }: { works: ArcadeWork[] | null }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [list.length, sel, current, select, neighbor, close, launch]);
 
+  useEffect(() => {
+    const el = scrollerRef.current;
+    const root = el?.parentElement;
+    if (!el || !root) return;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let lastX = el.scrollLeft;
+    let lastY = el.scrollTop;
+    let smoothDx = 0;
+    let smoothDy = 0;
+    let pointerX = (el.clientWidth || window.innerWidth) * 0.5;
+    let pointerY = (el.clientHeight || window.innerHeight) * 0.5;
+    let rafId = 0;
+
+    type TilePhysics = {
+      x: number;
+      y: number;
+      rot: number;
+      vx: number;
+      vy: number;
+      vrot: number;
+      tx: number;
+      ty: number;
+      trot: number;
+      stiff: number;
+      damp: number;
+      xGain: number;
+      yCross: number;
+      rotDir: number;
+      wavePhase: number;
+      waveFreq: number;
+    };
+
+    const states: TilePhysics[] = [];
+    const getState = (i: number): TilePhysics => {
+      let st = states[i];
+      if (!st) {
+        const phi = (i + 1) * 2.399963;
+        st = {
+          x: 0,
+          y: 0,
+          rot: 0,
+          vx: 0,
+          vy: 0,
+          vrot: 0,
+          tx: 0,
+          ty: 0,
+          trot: 0,
+          stiff: 0.045 + ((i * 37) % 19) * 0.003,
+          damp: 0.78 + ((i * 53) % 13) * 0.005,
+          xGain: 0.45 + Math.abs(Math.sin(phi)) * 0.45,
+          yCross: Math.cos(phi * 1.7) * 0.35,
+          rotDir: (i % 3 === 0 ? -1 : 1) * (0.45 + Math.abs(Math.sin(phi * 2.3)) * 0.45),
+          wavePhase: phi * 2.0,
+          waveFreq: 0.007 + (i % 5) * 0.0018,
+        };
+        states[i] = st;
+      }
+      return st;
+    };
+
+    const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+
+    const clearTileVars = () => {
+      const len = Math.max(tiles.current.length, states.length);
+      for (let i = 0; i < len; i++) {
+        const st = states[i];
+        if (st) {
+          st.x = st.y = st.rot = st.vx = st.vy = st.vrot = st.tx = st.ty = st.trot = 0;
+        }
+        const tile = tiles.current[i];
+        if (tile) {
+          tile.style.setProperty("--dx", "0px");
+          tile.style.setProperty("--dy", "0px");
+          tile.style.setProperty("--drot", "0deg");
+        }
+      }
+    };
+
+    const tick = () => {
+      if (reduceMotion.matches) {
+        clearTileVars();
+        delete root.dataset.scrolling;
+        rafId = 0;
+        return;
+      }
+
+      let allSettled = true;
+      const len = tiles.current.length;
+      for (let i = 0; i < len; i++) {
+        const tile = tiles.current[i];
+        if (!tile) continue;
+        const st = getState(i);
+
+        st.vx = (st.vx + (st.tx - st.x) * st.stiff) * st.damp;
+        st.vy = (st.vy + (st.ty - st.y) * st.stiff) * st.damp;
+        st.vrot = (st.vrot + (st.trot - st.rot) * st.stiff) * st.damp;
+        st.x += st.vx;
+        st.y += st.vy;
+        st.rot += st.vrot;
+
+        st.tx *= 0.84;
+        st.ty *= 0.84;
+        st.trot *= 0.84;
+
+        tile.style.setProperty("--dx", `${st.x.toFixed(2)}px`);
+        tile.style.setProperty("--dy", `${st.y.toFixed(2)}px`);
+        tile.style.setProperty("--drot", `${st.rot.toFixed(2)}deg`);
+
+        if (
+          Math.abs(st.x) >= 0.05 ||
+          Math.abs(st.y) >= 0.05 ||
+          Math.abs(st.rot) >= 0.05 ||
+          Math.abs(st.vx) >= 0.05 ||
+          Math.abs(st.vy) >= 0.05 ||
+          Math.abs(st.vrot) >= 0.05 ||
+          Math.abs(st.tx) >= 0.05 ||
+          Math.abs(st.ty) >= 0.05 ||
+          Math.abs(st.trot) >= 0.05
+        ) {
+          allSettled = false;
+        }
+      }
+
+      if (allSettled) {
+        smoothDx = smoothDy = 0;
+        clearTileVars();
+        delete root.dataset.scrolling;
+        rafId = 0;
+        return;
+      }
+
+      rafId = window.requestAnimationFrame(tick);
+    };
+
+    const onScroll = () => {
+      const dx = el.scrollLeft - lastX;
+      const dy = el.scrollTop - lastY;
+      lastX = el.scrollLeft;
+      lastY = el.scrollTop;
+
+      root.style.setProperty("--bg-x", `${(-el.scrollLeft * 0.12).toFixed(1)}px`);
+      root.style.setProperty("--bg-y", `${(-el.scrollTop * 0.12).toFixed(1)}px`);
+
+      if (reduceMotion.matches) return;
+
+      smoothDx = smoothDx * 0.65 + dx * 0.35;
+      smoothDy = smoothDy * 0.65 + dy * 0.35;
+      const sPos = el.scrollLeft + el.scrollTop;
+      const speedFactor = clamp(Math.hypot(smoothDx, smoothDy) / 36, 0, 1);
+      const len = tiles.current.length;
+
+      for (let i = 0; i < len; i++) {
+        if (!tiles.current[i]) continue;
+        const st = getState(i);
+        const ripple = 0.65 + 0.7 * (0.5 + 0.5 * Math.sin(st.wavePhase * 0.7 + pointerX * 0.008 + pointerY * 0.008));
+        const waveX = Math.cos(sPos * st.waveFreq + st.wavePhase) * speedFactor * 1.8;
+        const waveY = Math.sin(sPos * st.waveFreq + st.wavePhase) * speedFactor * 2.2;
+
+        st.tx = clamp((-smoothDx * st.xGain + smoothDy * st.yCross * 0.5) * 0.22 * ripple + waveX, -6, 6);
+        st.ty = clamp((-smoothDy * st.xGain + smoothDx * st.yCross) * 0.22 * ripple + waveY, -5, 5);
+        st.trot = clamp((smoothDx * 0.11 - smoothDy * 0.08) * st.rotDir * ripple + waveY * 0.18, -2.4, 2.4);
+      }
+
+      if (!rafId) {
+        root.dataset.scrolling = "";
+        rafId = window.requestAnimationFrame(tick);
+      }
+    };
+
+    // PC 마우스 드래그로도 가로/세로 스크롤을 당길 수 있게 지원
+    let dragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+
+    const onPointerDown = (e: PointerEvent) => {
+      pointerX = e.clientX;
+      pointerY = e.clientY;
+      if (e.pointerType !== "mouse" || e.button !== 0) return;
+      dragging = true;
+      draggedRef.current = false;
+      startX = e.clientX;
+      startY = e.clientY;
+      startLeft = el.scrollLeft;
+      startTop = el.scrollTop;
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      pointerX = e.clientX;
+      pointerY = e.clientY;
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (!draggedRef.current && Math.hypot(dx, dy) > 6) {
+        draggedRef.current = true;
+        el.dataset.dragging = "";
+      }
+      if (draggedRef.current) {
+        el.scrollLeft = startLeft - dx;
+        el.scrollTop = startTop - dy;
+      }
+    };
+
+    const onPointerUp = () => {
+      if (!dragging) return;
+      dragging = false;
+      delete el.dataset.dragging;
+      if (draggedRef.current) {
+        window.setTimeout(() => {
+          draggedRef.current = false;
+        }, 0);
+      }
+    };
+
+    el.addEventListener("scroll", onScroll, { passive: true });
+    el.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
+
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      el.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+      if (rafId) window.cancelAnimationFrame(rafId);
+      clearTileVars();
+      delete root.dataset.scrolling;
+      delete el.dataset.dragging;
+    };
+  }, []);
+
   const toggleSound = () => {
     const next = !muted;
     setMuted(next);
@@ -180,7 +417,14 @@ export function Arcade({ works }: { works: ArcadeWork[] | null }) {
       </div>
 
       {/* 타일 카탈로그 */}
-      <div className={s.scroller} onClick={(e) => e.target === e.currentTarget && close()}>
+      <div
+        ref={scrollerRef}
+        className={s.scroller}
+        onClick={(e) => {
+          if (draggedRef.current) return;
+          if (e.target === e.currentTarget) close();
+        }}
+      >
         {works === null ? (
           <ul className={s.grid} aria-hidden>
             {Array.from({ length: 12 }, (_, i) => (
@@ -190,7 +434,13 @@ export function Arcade({ works }: { works: ArcadeWork[] | null }) {
         ) : list.length === 0 ? (
           <p className={s.empty}>아직 공개된 작품이 없습니다.</p>
         ) : (
-          <ul className={s.grid} onClick={(e) => e.target === e.currentTarget && close()}>
+          <ul
+            className={s.grid}
+            onClick={(e) => {
+              if (draggedRef.current) return;
+              if (e.target === e.currentTarget) close();
+            }}
+          >
             {list.map((w, i) => (
               <li key={w.slug} style={{ "--i": i } as CSSProperties}>
                 <button
@@ -202,7 +452,11 @@ export function Arcade({ works }: { works: ArcadeWork[] | null }) {
                   data-purpose={w.purpose}
                   aria-pressed={sel === i}
                   aria-label={`${w.title}${sel === i ? " — 한 번 더 누르면 시작" : ""}`}
-                  onClick={() => (sel === i ? launch(w) : select(i, "tap"))}
+                  onClick={() => {
+                    if (draggedRef.current) return;
+                    if (sel === i) launch(w);
+                    else select(i, "tap");
+                  }}
                 >
                   <span className={s.thumb}>
                     {w.thumbnail ? (
