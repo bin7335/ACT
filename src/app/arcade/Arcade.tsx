@@ -88,7 +88,8 @@ export function Arcade({ works }: { works: ArcadeWork[] | null }) {
   /** 화면상 위치로 다음 타일을 찾는다(행·열 수가 화면 방향마다 달라서 계산 대신 측정). */
   const neighbor = useCallback(
     (from: number, dir: Dir) => {
-      const a = tiles.current[from]?.getBoundingClientRect();
+      const fromEl = tiles.current[from];
+      const a = (fromEl?.parentElement ?? fromEl)?.getBoundingClientRect();
       if (!a) return from;
       const ax = a.left + a.width / 2;
       const ay = a.top + a.height / 2;
@@ -96,7 +97,7 @@ export function Arcade({ works }: { works: ArcadeWork[] | null }) {
       let bestScore = Infinity;
       tiles.current.forEach((el, i) => {
         if (!el || i === from) return;
-        const b = el.getBoundingClientRect();
+        const b = (el.parentElement ?? el).getBoundingClientRect();
         const dx = b.left + b.width / 2 - ax;
         const dy = b.top + b.height / 2 - ay;
         const main = dir === "left" ? -dx : dir === "right" ? dx : dir === "up" ? -dy : dy;
@@ -277,10 +278,14 @@ export function Arcade({ works }: { works: ArcadeWork[] | null }) {
       lastX = el.scrollLeft;
       lastY = el.scrollTop;
 
+      if (reduceMotion.matches) {
+        root.style.setProperty("--bg-x", "0px");
+        root.style.setProperty("--bg-y", "0px");
+        return;
+      }
+
       root.style.setProperty("--bg-x", `${(-el.scrollLeft * 0.12).toFixed(1)}px`);
       root.style.setProperty("--bg-y", `${(-el.scrollTop * 0.12).toFixed(1)}px`);
-
-      if (reduceMotion.matches) return;
 
       smoothDx = smoothDx * 0.65 + dx * 0.35;
       smoothDy = smoothDy * 0.65 + dy * 0.35;
@@ -325,10 +330,25 @@ export function Arcade({ works }: { works: ArcadeWork[] | null }) {
       startTop = el.scrollTop;
     };
 
+    const onPointerUp = () => {
+      if (!dragging) return;
+      dragging = false;
+      delete el.dataset.dragging;
+      if (draggedRef.current) {
+        window.setTimeout(() => {
+          draggedRef.current = false;
+        }, 0);
+      }
+    };
+
     const onPointerMove = (e: PointerEvent) => {
       pointerX = e.clientX;
       pointerY = e.clientY;
       if (!dragging) return;
+      if ((e.buttons & 1) === 0) {
+        onPointerUp();
+        return;
+      }
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
       if (!draggedRef.current && Math.hypot(dx, dy) > 6) {
@@ -338,17 +358,6 @@ export function Arcade({ works }: { works: ArcadeWork[] | null }) {
       if (draggedRef.current) {
         el.scrollLeft = startLeft - dx;
         el.scrollTop = startTop - dy;
-      }
-    };
-
-    const onPointerUp = () => {
-      if (!dragging) return;
-      dragging = false;
-      delete el.dataset.dragging;
-      if (draggedRef.current) {
-        window.setTimeout(() => {
-          draggedRef.current = false;
-        }, 0);
       }
     };
 
