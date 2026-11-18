@@ -43,6 +43,7 @@ export function Arcade({ works }: { works: ArcadeWork[] | null }) {
   const tiles = useRef<(HTMLButtonElement | null)[]>([]);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const draggedRef = useRef(false);
+  const swallowClickUntil = useRef(0);
   const list = works ?? [];
   const current = sel !== null ? list[sel] : null;
 
@@ -334,11 +335,8 @@ export function Arcade({ works }: { works: ArcadeWork[] | null }) {
       if (!dragging) return;
       dragging = false;
       delete el.dataset.dragging;
-      if (draggedRef.current) {
-        window.setTimeout(() => {
-          draggedRef.current = false;
-        }, 0);
-      }
+      // 드래그로 끝난 클릭은 삼킨다. setTimeout(0) 순서에 기대지 않고 명시적인 시간 창을 둔다.
+      if (draggedRef.current) swallowClickUntil.current = performance.now() + 400;
     };
 
     const onPointerMove = (e: PointerEvent) => {
@@ -361,7 +359,17 @@ export function Arcade({ works }: { works: ArcadeWork[] | null }) {
       }
     };
 
+    // 가로 목록은 overflow-y가 hidden이라 세로 휠이 그냥 죽는다. 세로 휠을 가로 이동으로 돌린다.
+    // 세로로 쌓이는 화면(포트레이트)에서는 가로 스크롤이 없으므로 기본 스크롤을 그대로 쓴다.
+    const onWheel = (e: WheelEvent) => {
+      if (el.scrollWidth <= el.clientWidth + 1) return;
+      if (Math.abs(e.deltaX) > 1 || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+
     el.addEventListener("scroll", onScroll, { passive: true });
+    el.addEventListener("wheel", onWheel, { passive: false });
     el.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp);
@@ -369,6 +377,7 @@ export function Arcade({ works }: { works: ArcadeWork[] | null }) {
 
     return () => {
       el.removeEventListener("scroll", onScroll);
+      el.removeEventListener("wheel", onWheel);
       el.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
@@ -430,7 +439,7 @@ export function Arcade({ works }: { works: ArcadeWork[] | null }) {
         ref={scrollerRef}
         className={s.scroller}
         onClick={(e) => {
-          if (draggedRef.current) return;
+          if (performance.now() < swallowClickUntil.current) return;
           if (e.target === e.currentTarget) close();
         }}
       >
@@ -446,7 +455,7 @@ export function Arcade({ works }: { works: ArcadeWork[] | null }) {
           <ul
             className={s.grid}
             onClick={(e) => {
-              if (draggedRef.current) return;
+              if (performance.now() < swallowClickUntil.current) return;
               if (e.target === e.currentTarget) close();
             }}
           >
@@ -462,7 +471,7 @@ export function Arcade({ works }: { works: ArcadeWork[] | null }) {
                   aria-pressed={sel === i}
                   aria-label={`${w.title}${sel === i ? " — 한 번 더 누르면 시작" : ""}`}
                   onClick={() => {
-                    if (draggedRef.current) return;
+                    if (performance.now() < swallowClickUntil.current) return;
                     if (sel === i) launch(w);
                     else select(i, "tap");
                   }}
